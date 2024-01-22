@@ -1,7 +1,5 @@
 import discord
 from discord.ext import commands
-import config
-from config import *
 import os
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -16,7 +14,19 @@ intents.members = True
 bot = commands.Bot(command_prefix='$', intents=intents)
 
 # firebase config
-firebase_config = config.firebase_config
+firebase_config = {
+  "type": os.getenv('FB_TYPE'),
+  "project_id": os.getenv('FB_PROJECT_ID'),
+  "private_key_id": os.getenv('FB_PRIVATE_KEY_ID'),
+  "private_key": os.getenv('FB_PRIVATE_KEY').replace("\\n", "\n"),
+  "client_email": os.getenv('FB_CLIENT_EMAIL'),
+  "client_id": os.getenv('FB_CLIENT_ID'),
+  "auth_uri": os.getenv('FB_AUTH_URI'),
+  "token_uri": os.getenv('FB_TOKEN_URI'),
+  "auth_provider_x509_cert_url": os.getenv('FB_AUTH_URL'),
+  "client_x509_cert_url": os.getenv('FB_CLIENT_URL'),
+  "universe_domain": os.getenv('FB_UNIVERSE_DOMAIN')
+}
 cred = credentials.Certificate(firebase_config)
 db_app = firebase_admin.initialize_app(cred)
 db = firestore.client()
@@ -25,6 +35,8 @@ messages_ref = db.collection('message_templates')
 
 day_emojis = ["1️⃣ ", "2️⃣ ", "3️⃣ ", "4️⃣ ", "5️⃣ ", "6️⃣ ", "7️⃣ ", "8️⃣ ", "9️⃣ ", "0️⃣ "]
 last_voting_msg_id = None
+server_id = os.getenv('SERVER_ID')
+token = os.getenv('TOKEN')
 
 
 @bot.event
@@ -79,7 +91,7 @@ async def on_booked(ctx, loc, date, time):
     start_datetime = booked_date.replace(hour=start_time.hour, tzinfo=ZoneInfo('America/Toronto'))
     end_datetime = booked_date.replace(hour=end_time.hour, tzinfo=ZoneInfo('America/Toronto'))
 
-    await bot.get_guild(config.SERVER_ID).create_scheduled_event(
+    await bot.get_guild(server_id).create_scheduled_event(
         name='Volleyball Runs',
         description='Come to our volleyball runs',
         start_time=start_datetime,
@@ -98,5 +110,5 @@ async def test(ctx):
     print(location['message'].replace('\\n', '\n'))
 
 
-bot.run(config.TOKEN)
+bot.run(token)
 

@@ -1,0 +1,15 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# configs
+config.py
+test.py
+
+# extras
+.idea/
+.DS_Store
+__pycache__/

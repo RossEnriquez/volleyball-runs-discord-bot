@@ -30,15 +30,17 @@ announcement_channel = None
 # cache msg ids
 last_start_msg_id = None
 last_booked_msg_id = None
-server_id = config.SERVER_ID
+server_id = None
 token = config.TOKEN
 
 
 @bot.event
 async def on_ready():
-    global announcement_channel
-    channel_id = utils_ref.document('announcement_channel').get().to_dict()['id']
+    global announcement_channel, server_id
+    channel_id = utils_ref.document('server_info').get().to_dict()['announcement_channel_id']
     announcement_channel = bot.get_channel(channel_id)
+
+    server_id = utils_ref.document('server_info').get().to_dict()['server_id']
 
     print(f'We have logged in as {bot.user}')
 

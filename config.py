@@ -1,7 +1,8 @@
 import os
 
 TOKEN = os.getenv('TOKEN')
-SERVER_ID = os.getenv('SERVER_ID')
+SERVER_ID = 1198769492101173441
+ANNOUNCEMENT_CHANNEL_ID = 1199138053814489163
 
 firebase_config = {
   "type": os.getenv('FB_TYPE'),

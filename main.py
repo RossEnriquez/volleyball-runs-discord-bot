@@ -1,11 +1,11 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import config
 from config import *
 import firebase_admin
 from firebase_admin import credentials, firestore
 import datetime
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 # discord config
@@ -24,10 +24,13 @@ locations_ref = db.collection('locations')
 messages_ref = db.collection('message_templates')
 utils_ref = db.collection('utils')
 users_ref = db.collection('users')
+reminders_ref = db.collection('reminders')
 
-day_emojis = ["1️⃣ ", "2️⃣ ", "3️⃣ ", "4️⃣ ", "5️⃣ ", "6️⃣ ", "7️⃣ ", "8️⃣ ", "9️⃣ ", "0️⃣ "]
+day_emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "0️⃣"]
+booked_emojis = ['👍', '👎', '❔']
 announcement_channel = None
-# cache msg ids
+control_channel = None
+# internal cache
 last_start_msg_id = None
 last_booked_msg_id = None
 server_id = config.SERVER_ID
@@ -36,9 +39,43 @@ token = config.TOKEN
 
 @bot.event
 async def on_ready():
-    global announcement_channel, server_id
+    global announcement_channel, control_channel, server_id
     announcement_channel = bot.get_channel(config.ANNOUNCEMENT_CHANNEL_ID)
+    control_channel = bot.get_channel(config.CONTROL_CHANNEL_ID)
     server_id = config.SERVER_ID
+
+    # check if reminders need to be sent out
+    reminder_no_response_start = reminders_ref.document('no_response_start').get().to_dict()
+    reminder_no_response_booked = reminders_ref.document('no_response_booked').get().to_dict()
+    reminder_plus_one = reminders_ref.document('plus_one').get().to_dict()
+
+    if reminder_no_response_start['should_reply']:
+        scheduled_datetime = datetime.fromtimestamp(
+            reminder_no_response_start['scheduled_datetime'].timestamp(), tz=timezone.utc)
+        # scheduled date is in the past
+        if scheduled_datetime < datetime.today():
+            reminders_ref.document('no_response_start').update({'should_reply': False})
+
+        send_reminder_no_response_start.change_interval(time=scheduled_datetime.time())
+        send_reminder_no_response_start.start()
+
+    if reminder_no_response_booked['should_reply']:
+        scheduled_datetime = datetime.fromtimestamp(
+            reminder_no_response_booked['scheduled_datetime'].timestamp(), tz=timezone.utc)
+        if scheduled_datetime < datetime.today():
+            reminders_ref.document('no_response_booked').update({'should_reply': False})
+
+        send_reminder_no_response_booked.change_interval(time=scheduled_datetime.time())
+        send_reminder_no_response_booked.start()
+
+    if reminder_plus_one['should_reply']:
+        scheduled_datetime = datetime.fromtimestamp(
+            reminder_plus_one['scheduled_datetime'].timestamp(), tz=timezone.utc)
+        if scheduled_datetime < datetime.today():
+            reminders_ref.document('plus_one').update({'should_reply': False})
+
+        send_reminder_plus_one.change_interval(time=scheduled_datetime.time())
+        send_reminder_plus_one.start()
 
     print(f'We have logged in as {bot.user}')
 
@@ -55,20 +92,37 @@ async def on_start(ctx, start, days):
     msg_out = messages_ref.document('start').get().to_dict()['message'].replace('\\n', '\n')
     msg_out = msg_out.replace('[start_date]', start_date.strftime('%A `%b %d`'))
     day_msgs = ''
+    start_emojis = []
 
     for i, day_str in enumerate(selected_days[:10]):
         day_offset = int(day_str)
         # find date
         date_of_day = start_date + timedelta(days=day_offset)
-        day_msgs += day_emojis[i] + date_of_day.strftime('%A `%b %d`') + '\n'
+        day_msgs += day_emojis[i] + date_of_day.strftime(' %A `%b %d`') + '\n'
+        start_emojis.append(day_emojis[i])
+    start_emojis.append('❌')
 
     msg_out = msg_out.replace('[selected_days]', day_msgs)
-    await announcement_channel.send(msg_out)
+    sent_msg = await announcement_channel.send(msg_out)
 
     # store last start message id
     global last_start_msg_id
-    last_start_msg_id = announcement_channel.last_message_id
-    utils_ref.document('last_start_msg').update({'id': last_start_msg_id})
+    last_start_msg_id = sent_msg.id
+    utils_ref.document('last_start_msg').update({'id': sent_msg.id})
+
+    # add reactions to last start message
+    for emoji in start_emojis:
+        await sent_msg.add_reaction(emoji)
+
+    # set reminder for people who haven't responded to start message
+    reminder_no_response_datetime = datetime.utcnow() + timedelta(seconds=20)
+    no_response_doc = reminders_ref.document('no_response_start')
+    no_response_doc.update({
+        'scheduled_datetime': reminder_no_response_datetime,
+        'should_reply': True
+    })
+    send_reminder_no_response_start.change_interval(time=reminder_no_response_datetime.time())
+    send_reminder_no_response_start.start()
 
 
 # To send out the booked message
@@ -82,19 +136,23 @@ async def on_booked(ctx, loc, date, time):
                 f'- {booked_date.strftime("%A `%b %d`")} from `{time}`\n\n' + \
                 messages_ref.document('booked').get().to_dict()['message'].replace('\\n', '\n')
 
+    global last_start_msg_id, last_booked_msg_id
     # get last start message id
-    global last_start_msg_id
     if last_start_msg_id is None:
         last_start_msg_id = utils_ref.document('last_start_msg').get().to_dict()['id']
 
     last_voting_msg = await announcement_channel.fetch_message(last_start_msg_id)
-    await last_voting_msg.reply(reply_msg)
+    sent_msg = await last_voting_msg.reply(reply_msg)
 
     # store last booked message id
-    global last_booked_msg_id
-    last_booked_msg_id = announcement_channel.last_message_id
-    utils_ref.document('last_booked_msg').update({'id': last_start_msg_id})
+    last_booked_msg_id = sent_msg.id
+    utils_ref.document('last_booked_msg').update({'id': sent_msg.id})
 
+    # add reactions to last booked message
+    for emoji in booked_emojis:
+        await sent_msg.add_reaction(emoji)
+
+    # create scheduled event
     event_time = time.split('-')
     start_time = datetime.strptime(event_time[0], '%I%p')
     end_time = datetime.strptime(event_time[1], '%I%p')
@@ -102,16 +160,36 @@ async def on_booked(ctx, loc, date, time):
     start_datetime = booked_date.replace(hour=start_time.hour, tzinfo=ZoneInfo('America/Toronto'))
     end_datetime = booked_date.replace(hour=end_time.hour, tzinfo=ZoneInfo('America/Toronto'))
 
-    await bot.get_guild(server_id).create_scheduled_event(
-        name='Volleyball Runs',
-        description='Come to our volleyball runs',
-        start_time=start_datetime,
-        end_time=end_datetime,
-        privacy_level=discord.PrivacyLevel.guild_only,
-        entity_type=discord.EntityType.external,
-        location=(location['name'] + ', ' + location['address']),
-        reason='Booked new volleyball run'
-    )
+    # await bot.get_guild(server_id).create_scheduled_event(
+    #     name='Volleyball Runs',
+    #     description='Come to our volleyball runs',
+    #     start_time=start_datetime,
+    #     end_time=end_datetime,
+    #     privacy_level=discord.PrivacyLevel.guild_only,
+    #     entity_type=discord.EntityType.external,
+    #     location=(location['name'] + ', ' + location['address']),
+    #     reason='Booked new volleyball run'
+    # )
+
+    # set reminder for people who haven't responded to booked message
+    reminder_no_response_datetime = datetime.utcnow() + timedelta(seconds=20)
+    plus_one_doc = reminders_ref.document('no_response_booked')
+    plus_one_doc.update({
+        'scheduled_datetime': reminder_no_response_datetime,
+        'should_reply': True
+    })
+    send_reminder_no_response_booked.change_interval(time=reminder_no_response_datetime.time())
+    send_reminder_no_response_booked.start()
+
+    # set reminder for plus ones
+    reminder_plus_one_datetime = datetime.utcnow() + timedelta(seconds=30)
+    plus_one_doc = reminders_ref.document('plus_one')
+    plus_one_doc.update({
+        'scheduled_datetime': reminder_plus_one_datetime,
+        'should_reply': True
+    })
+    send_reminder_plus_one.change_interval(time=reminder_plus_one_datetime.time())
+    send_reminder_plus_one.start()
 
 
 # To check the streaks leaderboard
@@ -172,10 +250,26 @@ async def check_streaks(ctx):
 
 
 # To remind users who haven't reacted on the start message yet
-@bot.command(name='remind')
-async def on_remind(ctx):
+@bot.command(name='remindstart')
+async def on_remind_start(ctx):
+    await remind_start()
+
+
+# To remind users who haven't reacted on the booked message and didn't react with a ❌ on the start message
+@bot.command(name='remindbooked')
+async def on_remind_booked(ctx):
+    await remind_booked()
+
+
+# To remind users who liked the booked message to react if they have a plus one
+@bot.command(name='remindplusone')
+async def on_remind_plus_one(ctx):
+    await remind_plus_one()
+
+
+async def remind_start():
     reacted = set()
-    global last_start_msg_id, announcement_channel
+    global last_start_msg_id
     if last_start_msg_id is None:
         last_start_msg_id = utils_ref.document('last_start_msg').get().to_dict()['id']
     last_start_msg = await announcement_channel.fetch_message(last_start_msg_id)
@@ -183,33 +277,139 @@ async def on_remind(ctx):
     # collect users who have reacted
     for reaction in last_start_msg.reactions:
         async for user in reaction.users():
-            reacted.add(user.id)
+            if not user.bot:
+                reacted.add(user.id)
 
     # collect users who have not reacted
     not_reacted_msg = ''
     for user in bot.get_guild(server_id).members:
-        if user.id not in reacted and not user.bot:
+        if not user.bot and user.id not in reacted:
             not_reacted_msg += f'<@{user.id}> '
 
     # everybody reacted
     if not not_reacted_msg:
+        await control_channel.send('Everybody reacted accordingly!')
         return
 
-    msg = '⏰ Reminder to react on a day!\n\n' + not_reacted_msg
+    msg = '🔔 Reminder to react on a day!\n\n' + not_reacted_msg
     await last_start_msg.reply(msg)
+
+
+async def remind_booked():
+    reacted = set()
+    reacted_x = set()
+    global last_booked_msg_id, last_start_msg_id
+    if last_booked_msg_id is None:
+        last_booked_msg_id = utils_ref.document('last_booked_msg').get().to_dict()['id']
+    last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
+
+    if last_start_msg_id is None:
+        last_start_msg_id = utils_ref.document('last_start_msg').get().to_dict()['id']
+    last_start_msg = await announcement_channel.fetch_message(last_start_msg_id)
+
+    # collect users who have reacted to last booked message
+    for reaction in last_booked_msg.reactions:
+        async for user in reaction.users():
+            reacted.add(user.id)
+
+    # collect users who have reacted ❌ to last start message
+    for reaction in last_start_msg.reactions:
+        if reaction.emoji != '❌':
+            continue
+        async for user in reaction.users():
+            reacted_x.add(user.id)
+
+    # collect users who have not reacted
+    not_reacted_msg = ''
+    for user in bot.get_guild(server_id).members:
+        if not user.bot and user.id not in reacted and user.id not in reacted_x:
+            not_reacted_msg += f'<@{user.id}> '
+
+    # everybody reacted
+    if not not_reacted_msg:
+        await control_channel.send('Everybody reacted accordingly!')
+        return
+
+    msg = '🔔 Reminder to react on whether or not you are coming!\n\n' + not_reacted_msg
+    await last_booked_msg.reply(msg)
+
+
+async def remind_plus_one():
+    reacted = set()
+    global last_booked_msg_id, last_start_msg_id
+    if last_booked_msg_id is None:
+        last_booked_msg_id = utils_ref.document('last_booked_msg').get().to_dict()['id']
+    last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
+
+    # collect users who liked the last booked message
+    for reaction in last_booked_msg.reactions:
+        if reaction.emoji != '👍':
+            continue
+        async for user in reaction.users():
+            if not user.bot:
+                reacted.add(user.id)
+
+    # nobody liked the message :(
+    if not reacted:
+        await control_channel.send('Nobody reacted 👍 to the last booked message :(')
+        return
+
+    reacted_msg = '🔔 React to this message with a ☝️ if you have a +1\n\n'
+    for user_id in reacted:
+        reacted_msg += f'<@{user_id}> '
+
+    sent_msg = await last_booked_msg.reply(reacted_msg)
+    await sent_msg.add_reaction('☝️')
 
 
 # for testing purposes - can add whatever you want
 @bot.command(name='test')
 async def test(ctx):
-    for user in bot.get_guild(server_id).members:
-        if not user.bot:
-            print(user.name)
+    reminder_no_response_datetime = datetime.utcnow() + timedelta(seconds=20)
+    reminder_plus_one_datetime = datetime.utcnow() + timedelta(seconds=30)
+
+    no_response_doc = reminders_ref.document('no_response')
+    no_response_doc.update({
+        'scheduled_datetime': reminder_no_response_datetime,
+        'should_reply': True
+    })
+
+    plus_one_doc = reminders_ref.document('plus_one')
+    plus_one_doc.update({
+        'scheduled_datetime': reminder_plus_one_datetime,
+        'should_reply': True
+    })
+
+    send_reminder_no_response_start.change_interval(time=reminder_no_response_datetime.time())
+    send_reminder_plus_one.change_interval(time=reminder_plus_one_datetime.time())
+    send_reminder_no_response_start.start()
+    send_reminder_plus_one.start()
+
+
+@tasks.loop(count=1)
+async def send_reminder_no_response_start():
+    no_response_doc = reminders_ref.document('no_response_start')
+    no_response_doc.update({'should_reply': False})
+    await remind_start()
+
+
+@tasks.loop(count=1)
+async def send_reminder_no_response_booked():
+    no_response_doc = reminders_ref.document('no_response_booked')
+    no_response_doc.update({'should_reply': False})
+    await remind_booked()
+
+
+@tasks.loop(count=1)
+async def send_reminder_plus_one():
+    plus_one_doc = reminders_ref.document('plus_one')
+    plus_one_doc.update({'should_reply': False})
+    await remind_plus_one()
 
 
 @bot.event
 async def on_reaction_add(reaction, user):
-    if reaction.message.channel.id != announcement_channel.id:
+    if reaction.message.channel.id != announcement_channel.id or user.bot:
         return
 
     global last_booked_msg_id

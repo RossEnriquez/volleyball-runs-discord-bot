@@ -49,33 +49,9 @@ async def on_ready():
     reminder_no_response_booked = reminders_ref.document('no_response_booked').get().to_dict()
     reminder_plus_one = reminders_ref.document('plus_one').get().to_dict()
 
-    if reminder_no_response_start['should_reply']:
-        scheduled_datetime = datetime.fromtimestamp(
-            reminder_no_response_start['scheduled_datetime'].timestamp(), tz=timezone.utc)
-        # scheduled date is in the past
-        if scheduled_datetime < datetime.today():
-            reminders_ref.document('no_response_start').update({'should_reply': False})
-
-        send_reminder_no_response_start.change_interval(time=scheduled_datetime.time())
-        send_reminder_no_response_start.start()
-
-    if reminder_no_response_booked['should_reply']:
-        scheduled_datetime = datetime.fromtimestamp(
-            reminder_no_response_booked['scheduled_datetime'].timestamp(), tz=timezone.utc)
-        if scheduled_datetime < datetime.today():
-            reminders_ref.document('no_response_booked').update({'should_reply': False})
-
-        send_reminder_no_response_booked.change_interval(time=scheduled_datetime.time())
-        send_reminder_no_response_booked.start()
-
-    if reminder_plus_one['should_reply']:
-        scheduled_datetime = datetime.fromtimestamp(
-            reminder_plus_one['scheduled_datetime'].timestamp(), tz=timezone.utc)
-        if scheduled_datetime < datetime.today():
-            reminders_ref.document('plus_one').update({'should_reply': False})
-
-        send_reminder_plus_one.change_interval(time=scheduled_datetime.time())
-        send_reminder_plus_one.start()
+    run_reminder(reminder_no_response_start, send_reminder_no_response_start)
+    run_reminder(reminder_no_response_booked, send_reminder_no_response_booked)
+    run_reminder(reminder_plus_one, send_reminder_plus_one)
 
     print(f'We have logged in as {bot.user}')
 
@@ -464,6 +440,7 @@ async def on_raw_reaction_remove(payload):
         user_doc.update({'streak': user_info['last_streak']})
 
 
+# Adds the given user to firebase/users
 def add_user_to_db(user):
     if user.discriminator != '0':
         discriminator = '#' + user.discriminator
@@ -477,6 +454,19 @@ def add_user_to_db(user):
         'streak': 0,
         'last_streak': 0
     })
+
+
+# Checks if the reminder should be sent out and if so, schedules a task
+def run_reminder(reminder, do_reminder):
+    if reminder['should_reply']:
+        scheduled_datetime = datetime.fromtimestamp(
+            reminder['scheduled_datetime'].timestamp(), tz=timezone.utc)
+        # scheduled date is in the past
+        if scheduled_datetime < datetime.today():
+            reminders_ref.document('no_response_start').update({'should_reply': False})
+
+        do_reminder.change_interval(time=scheduled_datetime.time())
+        do_reminder.start()
 
 
 bot.run(token)

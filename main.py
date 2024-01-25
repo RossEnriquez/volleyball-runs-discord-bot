@@ -6,7 +6,6 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import datetime
 from datetime import datetime, timedelta, timezone
-from zoneinfo import ZoneInfo
 
 # discord config
 intents = discord.Intents.default()
@@ -157,8 +156,8 @@ async def on_booked(ctx, loc, date, time):
     start_time = datetime.strptime(event_time[0], '%I%p')
     end_time = datetime.strptime(event_time[1], '%I%p')
 
-    start_datetime = booked_date.replace(hour=start_time.hour, tzinfo=ZoneInfo('America/Toronto'))
-    end_datetime = booked_date.replace(hour=end_time.hour, tzinfo=ZoneInfo('America/Toronto'))
+    # start_datetime = booked_date.replace(hour=start_time.hour, tzinfo=ZoneInfo('America/Toronto'))
+    # end_datetime = booked_date.replace(hour=end_time.hour, tzinfo=ZoneInfo('America/Toronto'))
 
     # await bot.get_guild(server_id).create_scheduled_event(
     #     name='Volleyball Runs',
@@ -288,7 +287,8 @@ async def remind_start():
 
     # everybody reacted
     if not not_reacted_msg:
-        await control_channel.send('Everybody reacted accordingly!')
+        await control_channel.send(
+            '```[INFO] Reminder for booked message tried to send, but everybody reacted accordingly!```')
         return
 
     msg = '🔔 Reminder to react on a day!\n\n' + not_reacted_msg
@@ -327,7 +327,8 @@ async def remind_booked():
 
     # everybody reacted
     if not not_reacted_msg:
-        await control_channel.send('Everybody reacted accordingly!')
+        await control_channel.send(
+            '```[INFO] Reminder for booked message tried to send, but everybody reacted accordingly!```')
         return
 
     msg = '🔔 Reminder to react on whether or not you are coming!\n\n' + not_reacted_msg
@@ -351,7 +352,8 @@ async def remind_plus_one():
 
     # nobody liked the message :(
     if not reacted:
-        await control_channel.send('Nobody reacted 👍 to the last booked message :(')
+        await control_channel.send(
+            '```[INFO] Reminder for plus ones tried to send, but nobody reacted 👍 to the last booked message :(```')
         return
 
     reacted_msg = '🔔 React to this message with a ☝️ if you have a +1\n\n'
@@ -365,25 +367,13 @@ async def remind_plus_one():
 # for testing purposes - can add whatever you want
 @bot.command(name='test')
 async def test(ctx):
-    reminder_no_response_datetime = datetime.utcnow() + timedelta(seconds=20)
-    reminder_plus_one_datetime = datetime.utcnow() + timedelta(seconds=30)
+    user = ctx.author
+    if user.discriminator != '0':
+        discriminator = '#' + user.discriminator
+    else:
+        discriminator = ''
 
-    no_response_doc = reminders_ref.document('no_response')
-    no_response_doc.update({
-        'scheduled_datetime': reminder_no_response_datetime,
-        'should_reply': True
-    })
-
-    plus_one_doc = reminders_ref.document('plus_one')
-    plus_one_doc.update({
-        'scheduled_datetime': reminder_plus_one_datetime,
-        'should_reply': True
-    })
-
-    send_reminder_no_response_start.change_interval(time=reminder_no_response_datetime.time())
-    send_reminder_plus_one.change_interval(time=reminder_plus_one_datetime.time())
-    send_reminder_no_response_start.start()
-    send_reminder_plus_one.start()
+    await ctx.channel.send(f'user.id = {user.id}\nusername = {user.name + discriminator}\nnickname = {user.display_name}')
 
 
 @tasks.loop(count=1)
@@ -408,67 +398,73 @@ async def send_reminder_plus_one():
 
 
 @bot.event
-async def on_reaction_add(reaction, user):
-    if reaction.message.channel.id != announcement_channel.id or user.bot:
+async def on_raw_reaction_add(payload):
+    channel = await bot.fetch_channel(payload.channel_id)
+    message = await channel.fetch_message(payload.message_id)
+    user = await bot.fetch_user(payload.user_id)
+    emoji = str(payload.emoji)
+
+    if channel.id != announcement_channel.id or user.bot:
         return
 
     global last_booked_msg_id
     if last_booked_msg_id is None:
         last_booked_msg_id = utils_ref.document('last_booked_msg').get().to_dict()['id']
 
-    if reaction.message.id != last_booked_msg_id:
+    if message.id != last_booked_msg_id:
         return
 
-    if reaction.emoji == '👍':
+    if emoji == '👍':
         user_doc = users_ref.document(str(user.id))
-        if user_doc.get().exists:
-            user_info = user_doc.get().to_dict()
-            user_doc.update({'streak': user_info['streak'] + 1,
-                             'last_streak': user_info['streak'] + 1})
-        else:
+        if not user_doc.get().exists:
             add_user_to_db(user)
+        user_info = user_doc.get().to_dict()
+        user_doc.update({'streak': user_info['streak'] + 1,
+                         'last_streak': user_info['streak'] + 1})
 
-    elif reaction.emoji == '👎':
+    elif emoji == '👎':
         user_doc = users_ref.document(str(user.id))
-        if user_doc.get().exists:
-            user_doc.update({'streak': 0})
-        else:
+        if not user_doc.get().exists:
             add_user_to_db(user)
+        user_doc.update({'streak': 0})
 
 
 @bot.event
-async def on_reaction_remove(reaction, user):
-    if reaction.message.channel.id != announcement_channel.id:
+async def on_raw_reaction_remove(payload):
+    channel = await bot.fetch_channel(payload.channel_id)
+    message = await channel.fetch_message(payload.message_id)
+    user = await bot.fetch_user(payload.user_id)
+    emoji = str(payload.emoji)
+
+    if channel.id != announcement_channel.id or user.bot:
         return
 
     global last_booked_msg_id
     if last_booked_msg_id is None:
         last_booked_msg_id = utils_ref.document('last_booked_msg').get().to_dict()['id']
 
-    if reaction.message.id != last_booked_msg_id:
+    if message.id != last_booked_msg_id:
         return
 
-    if reaction.emoji == '👍':
+    if emoji == '👍':
         user_doc = users_ref.document(str(user.id))
-        if user_doc.get().exists:
-            user_info = user_doc.get().to_dict()
-            if user_info['streak'] != 0:
-                user_doc.update({'streak': user_info['streak'] - 1,
-                                 'last_streak': user_info['streak'] - 1})
-        else:
+        if not user_doc.get().exists:
             add_user_to_db(user)
+        user_info = user_doc.get().to_dict()
+        if user_info['streak'] > 0:
+            user_doc.update({'streak': user_info['streak'] - 1,
+                             'last_streak': user_info['streak'] - 1})
 
-    elif reaction.emoji == '👎':
+    elif emoji == '👎':
         user_doc = users_ref.document(str(user.id))
-        if user_doc.get().exists:
-            user_info = user_doc.get().to_dict()
-            user_doc.update({'streak': user_info['last_streak']})
-        else:
+        if not user_doc.get().exists:
             add_user_to_db(user)
+        user_info = user_doc.get().to_dict()
+        user_doc.update({'streak': user_info['last_streak']})
 
 
 def add_user_to_db(user):
-    if user.discriminator != 0:
+    if user.discriminator != '0':
         discriminator = '#' + user.discriminator
     else:
         discriminator = ''
@@ -477,7 +473,8 @@ def add_user_to_db(user):
     user_doc.set({
         'username': user.name + discriminator,
         'nickname': user.display_name,
-        'streak': 0
+        'streak': 0,
+        'last_streak': 0
     })
 
 

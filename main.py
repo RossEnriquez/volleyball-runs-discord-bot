@@ -6,6 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import datetime
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 # discord config
 intents = discord.Intents.default()

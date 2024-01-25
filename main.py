@@ -115,7 +115,7 @@ async def on_start(ctx, start, days):
         await sent_msg.add_reaction(emoji)
 
     # set reminder for people who haven't responded to start message
-    reminder_no_response_datetime = datetime.utcnow() + timedelta(seconds=20)
+    reminder_no_response_datetime = datetime.utcnow() + timedelta(hours=24)
     no_response_doc = reminders_ref.document('no_response_start')
     no_response_doc.update({
         'scheduled_datetime': reminder_no_response_datetime,
@@ -172,7 +172,7 @@ async def on_booked(ctx, loc, date, time):
     # )
 
     # set reminder for people who haven't responded to booked message
-    reminder_no_response_datetime = datetime.utcnow() + timedelta(seconds=20)
+    reminder_no_response_datetime = datetime.utcnow() + timedelta(hours=12)
     plus_one_doc = reminders_ref.document('no_response_booked')
     plus_one_doc.update({
         'scheduled_datetime': reminder_no_response_datetime,
@@ -182,7 +182,7 @@ async def on_booked(ctx, loc, date, time):
     send_reminder_no_response_booked.start()
 
     # set reminder for plus ones
-    reminder_plus_one_datetime = datetime.utcnow() + timedelta(seconds=30)
+    reminder_plus_one_datetime = datetime.utcnow() + timedelta(hours=24)
     plus_one_doc = reminders_ref.document('plus_one')
     plus_one_doc.update({
         'scheduled_datetime': reminder_plus_one_datetime,

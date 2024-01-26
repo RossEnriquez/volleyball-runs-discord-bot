@@ -210,7 +210,7 @@ async def check_streaks(ctx):
         await ctx.channel.send(embed=embed)
         return
 
-    sorted_users = sorted(users_dict)[::-1]
+    sorted_users = dict(sorted(users_dict.items(), key=lambda item: item[1])[::-1])
     if len(sorted_users) > 5:
         sorted_users = sorted_users[:5]
 

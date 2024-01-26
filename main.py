@@ -211,19 +211,21 @@ async def check_streaks(ctx):
         return
 
     sorted_users = dict(sorted(users_dict.items(), key=lambda item: item[1])[::-1])
-    if len(sorted_users) > 5:
-        sorted_users = sorted_users[:5]
-
     for i, user in enumerate(sorted_users):
+        emoji = ''
         if i == 0:
             emoji = '🥇'
         elif i == 1:
             emoji = '🥈'
         elif i == 2:
             emoji = '🥉'
-        else:
-            emoji = ''
-        embed_config['description'] += f'{i + 1}. {emoji} {user} ({users_dict[user]})\n'
+        elif i >= 5 and user != ctx.author.display_name:
+            continue
+
+        embed_msg = f'{i + 1}. {emoji} {user} ({users_dict[user]})\n'
+        if user == ctx.author.display_name:
+            embed_msg = '**' + embed_msg + '**'
+        embed_config['description'] += embed_msg
 
     embed = discord.Embed(
         title=embed_config['title'],

@@ -190,7 +190,7 @@ async def check_streaks(ctx):
 
     for user in users:
         user_info = user.to_dict()
-        users_dict[user_info['username']] = user_info['streak']
+        users_dict[user_info['nickname']] = user_info['streak']
 
     if len(users_dict) == 0:
         msg = 'No users recorded yet!'

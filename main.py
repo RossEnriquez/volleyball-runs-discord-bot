@@ -111,6 +111,10 @@ async def on_booked(ctx, loc, date, time):
     if ctx.author.id not in bot_admins:
         return
 
+    # turn off reminder for start message
+    reminders_ref.document('no_response_start').update({'should_reply': False})
+    send_reminder_no_response_start.cancel()
+
     today = datetime.today()
     location = locations_ref.document(loc).get().to_dict()
     booked_date = datetime.strptime(str(today.year) + date, '%Y%b%d')

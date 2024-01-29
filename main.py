@@ -197,7 +197,7 @@ async def check_streaks(ctx):
         'footer': 'Tip: Make sure to react to the BOOKED messages to participate!'
     }
 
-    await sort_then_message(ctx, users_dict, embed_config)
+    await sort_then_message(ctx, users_dict, embed_config, 5)
 
 
 # To check the total leaderboard
@@ -217,11 +217,11 @@ async def on_leaderboard(ctx):
         'footer': 'Tip: Make sure to react to the BOOKED messages to participate!'
     }
 
-    await sort_then_message(ctx, users_dict, embed_config)
+    await sort_then_message(ctx, users_dict, embed_config, 10)
 
 
 # Sorts the given user list by dict value then sends an embed to the ctx channel
-async def sort_then_message(ctx, users, embed_config):
+async def sort_then_message(ctx, users, embed_config, top_user_count):
     if len(users) == 0:
         msg = 'No users recorded yet!'
         embed_config['description'] = msg
@@ -245,7 +245,7 @@ async def sort_then_message(ctx, users, embed_config):
             emoji = '🥈'
         elif i == 2:
             emoji = '🥉'
-        elif i >= 5 and user != ctx.author.display_name:
+        elif i >= top_user_count and user != ctx.author.display_name:
             continue
 
         embed_msg = f'{i + 1}. {emoji} {user} ({users[user]})\n'

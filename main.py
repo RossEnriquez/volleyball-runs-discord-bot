@@ -339,7 +339,7 @@ async def on_raw_reaction_add(payload):
                 continue
 
             # 12 people voted on a day - send a notif
-            matched_day = re.search(f'{emoji}(.*)\n', message.content)
+            matched_day = re.search(f'{emoji}(.*)\n', message.content).group(1)
             await control_channel.send(f'🔔 @everyone Day {matched_day} reached {day_limit} votes!')
             return
     else:

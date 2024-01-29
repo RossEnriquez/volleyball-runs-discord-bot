@@ -185,19 +185,44 @@ async def on_booked(ctx, loc, date, time):
 async def check_streaks(ctx):
     users_dict = {}
     users = users_ref.stream()
-    embed_config = {
-        'title': '🏆 STREAKS 🏆',
-        'type': 'rich',
-        'description': '**Check to see who has the longest streak 🔥 of going to the runs!**\n\n',
-        'colour': discord.Colour.gold(),
-        'footer': 'Tip: Make sure to react to the BOOKED messages to participate!'
-    }
-
     for user in users:
         user_info = user.to_dict()
         users_dict[user_info['nickname']] = user_info['streak']
 
-    if len(users_dict) == 0:
+    embed_config = {
+        'title': '🔥 STREAKS 🔥',
+        'type': 'rich',
+        'description': '**Check to see who has the longest streak of going to the 🏐 runs!**\n\n',
+        'colour': discord.Colour.orange(),
+        'footer': 'Tip: Make sure to react to the BOOKED messages to participate!'
+    }
+
+    await sort_then_message(ctx, users_dict, embed_config)
+
+
+# To check the total leaderboard
+@bot.command(name='leaderboard')
+async def on_leaderboard(ctx):
+    users_dict = {}
+    users = users_ref.stream()
+    for user in users:
+        user_info = user.to_dict()
+        users_dict[user_info['nickname']] = user_info['total_times_came']
+
+    embed_config = {
+        'title': '🏆 LEADERBOARDS 🏆',
+        'type': 'rich',
+        'description': '**Check to see who has been to the 🏐 runs the most!**\n\n',
+        'colour': discord.Colour.gold(),
+        'footer': 'Tip: Make sure to react to the BOOKED messages to participate!'
+    }
+
+    await sort_then_message(ctx, users_dict, embed_config)
+
+
+# Sorts the given user list by dict value then sends an embed to the ctx channel
+async def sort_then_message(ctx, users, embed_config):
+    if len(users) == 0:
         msg = 'No users recorded yet!'
         embed_config['description'] = msg
         embed = discord.Embed(
@@ -211,7 +236,7 @@ async def check_streaks(ctx):
         await ctx.channel.send(embed=embed)
         return
 
-    sorted_users = dict(sorted(users_dict.items(), key=lambda item: item[1])[::-1])
+    sorted_users = dict(sorted(users.items(), key=lambda item: item[1])[::-1])
     for i, user in enumerate(sorted_users):
         emoji = ''
         if i == 0:
@@ -223,7 +248,7 @@ async def check_streaks(ctx):
         elif i >= 5 and user != ctx.author.display_name:
             continue
 
-        embed_msg = f'{i + 1}. {emoji} {user} ({users_dict[user]})\n'
+        embed_msg = f'{i + 1}. {emoji} {user} ({users[user]})\n'
         if user == ctx.author.display_name:
             embed_msg = '**' + embed_msg + '**'
         embed_config['description'] += embed_msg
@@ -333,14 +358,14 @@ async def on_raw_reaction_add(payload):
         if emoji == '❌':
             return
 
-        day_limit = 12
+        vote_limit = 12
         for reaction in message.reactions:
-            if reaction.emoji != emoji or reaction.count != day_limit + 1:
+            if reaction.emoji != emoji or reaction.count != vote_limit + 1:
                 continue
 
             # 12 people voted on a day - send a notif
             matched_day = re.search(f'{emoji}(.*)\n', message.content).group(1)
-            await control_channel.send(f'🔔 @everyone Day {emoji}{matched_day} reached {day_limit} votes!')
+            await control_channel.send(f'🔔 @everyone Day {emoji} {matched_day} reached {vote_limit} votes!')
             return
     else:
         return

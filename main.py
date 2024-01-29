@@ -7,6 +7,7 @@ from firebase_admin import credentials, firestore
 import datetime
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
+import re
 
 # discord config
 intents = discord.Intents.default()
@@ -307,26 +308,42 @@ async def on_raw_reaction_add(payload):
     if channel.id != announcement_channel.id or user.bot:
         return
 
-    global last_booked_msg_id
+    global last_booked_msg_id, last_start_msg_id
     if last_booked_msg_id is None:
         last_booked_msg_id = utils_ref.document('last_booked_msg').get().to_dict()['id']
+    if last_start_msg_id is None:
+        last_start_msg_id = utils_ref.document('last_start_msg').get().to_dict()['id']
 
-    if message.id != last_booked_msg_id:
+    if message.id == last_booked_msg_id:
+        if emoji == '👍':
+            user_doc = users_ref.document(str(user.id))
+            if not user_doc.get().exists:
+                add_user_to_db(user)
+            user_info = user_doc.get().to_dict()
+            user_doc.update({'streak': user_info['streak'] + 1,
+                             'last_streak': user_info['streak'] + 1})
+
+        elif emoji == '👎':
+            user_doc = users_ref.document(str(user.id))
+            if not user_doc.get().exists:
+                add_user_to_db(user)
+            user_doc.update({'streak': 0})
+
+    elif message.id == last_start_msg_id:
+        if emoji == '❌':
+            return
+
+        day_limit = 7
+        for reaction in message.reactions:
+            if reaction.emoji != emoji or reaction.count != day_limit:
+                continue
+
+            # 12 people voted on a day - send a notif
+            matched_day = re.search(f'{emoji}(.*)\n', message.content)
+            await control_channel.send(f'🔔 @everyone Day {matched_day} reached {day_limit} votes!')
+            return
+    else:
         return
-
-    if emoji == '👍':
-        user_doc = users_ref.document(str(user.id))
-        if not user_doc.get().exists:
-            add_user_to_db(user)
-        user_info = user_doc.get().to_dict()
-        user_doc.update({'streak': user_info['streak'] + 1,
-                         'last_streak': user_info['streak'] + 1})
-
-    elif emoji == '👎':
-        user_doc = users_ref.document(str(user.id))
-        if not user_doc.get().exists:
-            add_user_to_db(user)
-        user_doc.update({'streak': 0})
 
 
 @bot.event

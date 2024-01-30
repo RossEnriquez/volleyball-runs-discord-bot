@@ -346,7 +346,8 @@ async def on_raw_reaction_add(payload):
                 add_user_to_db(user)
             user_info = user_doc.get().to_dict()
             user_doc.update({'streak': user_info['streak'] + 1,
-                             'last_streak': user_info['streak'] + 1})
+                             'last_streak': user_info['streak'] + 1,
+                             'total_times_came': user_info['total_times_came'] + 1})
 
         elif emoji == '👎':
             user_doc = users_ref.document(str(user.id))
@@ -396,6 +397,7 @@ async def on_raw_reaction_remove(payload):
         if user_info['streak'] > 0:
             user_doc.update({'streak': user_info['streak'] - 1,
                              'last_streak': user_info['streak'] - 1})
+        user_doc.update({'total_times_came': user_info['total_times_came'] - 1})
 
     elif emoji == '👎':
         user_doc = users_ref.document(str(user.id))

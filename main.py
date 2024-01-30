@@ -252,6 +252,9 @@ async def sort_then_message(ctx, users, embed_config, top_user_count):
         if user == ctx.author.display_name:
             name_with_streak = '**' + name_with_streak + '** ◄'
         embed_msg = f'{i + 1}. {emoji} {name_with_streak}'
+
+        if i >= top_user_count:
+            embed_msg = '---------------\n' + embed_msg
         embed_config['description'] += embed_msg + '\n'
 
     embed = discord.Embed(
@@ -260,6 +263,7 @@ async def sort_then_message(ctx, users, embed_config, top_user_count):
         description=embed_config['description'],
         colour=embed_config['colour'],
     )
+    print(embed_config['description'])
     embed.set_footer(text=embed_config['footer'])
     embed.add_field(name='', value='', inline=False)
     await ctx.channel.send(embed=embed)

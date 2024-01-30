@@ -250,7 +250,7 @@ async def sort_then_message(ctx, users, embed_config, top_user_count):
 
         embed_msg = f'{i + 1}. {emoji} {user} ({users[user]})'
         if user == ctx.author.display_name:
-            embed_msg += '\t⬅'
+            embed_msg += ' ◅'
         embed_config['description'] += embed_msg + '\n'
 
     embed = discord.Embed(

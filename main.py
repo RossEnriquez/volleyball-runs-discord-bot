@@ -145,19 +145,19 @@ async def on_booked(ctx, loc, date, time):
     start_time = datetime.strptime(event_time[0], '%I%p')
     end_time = datetime.strptime(event_time[1], '%I%p')
 
-    # start_datetime = booked_date.replace(hour=start_time.hour, tzinfo=ZoneInfo('America/Toronto'))
-    # end_datetime = booked_date.replace(hour=end_time.hour, tzinfo=ZoneInfo('America/Toronto'))
+    start_datetime = booked_date.replace(hour=start_time.hour, tzinfo=ZoneInfo('America/Toronto'))
+    end_datetime = booked_date.replace(hour=end_time.hour, tzinfo=ZoneInfo('America/Toronto'))
 
-    # await bot.get_guild(server_id).create_scheduled_event(
-    #     name='Volleyball Runs',
-    #     description='Come to our volleyball runs',
-    #     start_time=start_datetime,
-    #     end_time=end_datetime,
-    #     privacy_level=discord.PrivacyLevel.guild_only,
-    #     entity_type=discord.EntityType.external,
-    #     location=(location['name'] + ', ' + location['address']),
-    #     reason='Booked new volleyball run'
-    # )
+    await bot.get_guild(server_id).create_scheduled_event(
+        name='🏐 Volleyball Runs 🏐',
+        description='Come to our volleyball runs 😆',
+        start_time=start_datetime,
+        end_time=end_datetime,
+        privacy_level=discord.PrivacyLevel.guild_only,
+        entity_type=discord.EntityType.external,
+        location=(location['name'] + ', ' + location['address']),
+        reason='Booked a new volleyball run'
+    )
 
     # set reminder for people who haven't responded to booked message
     reminder_no_response_datetime = datetime.utcnow() + timedelta(hours=12)
@@ -525,7 +525,7 @@ def run_reminder(reminder, do_reminder):
         scheduled_datetime = datetime.fromtimestamp(
             reminder['scheduled_datetime'].timestamp(), tz=timezone.utc)
         # scheduled date is in the past
-        if scheduled_datetime < datetime.today():
+        if scheduled_datetime < datetime.utcnow():
             reminders_ref.document('no_response_start').update({'should_reply': False})
 
         do_reminder.change_interval(time=scheduled_datetime.time())

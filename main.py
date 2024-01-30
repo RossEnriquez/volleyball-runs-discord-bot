@@ -248,9 +248,10 @@ async def sort_then_message(ctx, users, embed_config, top_user_count):
         elif i >= top_user_count and user != ctx.author.display_name:
             continue
 
-        embed_msg = f'{i + 1}. {emoji} {user} ({users[user]})'
+        name_with_streak = f'{user} ({users[user]})'
         if user == ctx.author.display_name:
-            embed_msg += ' ◅'
+            name_with_streak = '**' + name_with_streak + '** ◄'
+        embed_msg = f'{i + 1}. {emoji} {name_with_streak}'
         embed_config['description'] += embed_msg + '\n'
 
     embed = discord.Embed(

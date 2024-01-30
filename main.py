@@ -524,8 +524,8 @@ async def remind_plus_one():
 # Checks if the reminder should be sent out and if so, schedules a task
 def run_reminder(reminder, do_reminder):
     if reminder['should_reply']:
-        scheduled_datetime = datetime.fromtimestamp(
-            reminder['scheduled_datetime'].timestamp(), tz=timezone.utc)
+        scheduled_datetime = datetime.utcfromtimestamp(reminder['scheduled_datetime'].timestamp())
+
         # scheduled date is in the past
         if scheduled_datetime < datetime.utcnow():
             reminders_ref.document('no_response_start').update({'should_reply': False})

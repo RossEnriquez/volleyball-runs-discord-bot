@@ -593,6 +593,12 @@ async def remind_plus_one():
     utils_ref.document('last_plus_one_msg').update({'id': sent_msg.id})
 
 
+@bot.command(name='fetchlatestmessages')
+async def on_fetch_latest(ctx):
+    utils_ref.document('last_plus_one_msg').update({'id': announcement_channel.last_message_id})
+    print('updated plus one msg!')
+
+
 async def remind_day_before():
     reacted_going = set()
     reacted_unsure = set()

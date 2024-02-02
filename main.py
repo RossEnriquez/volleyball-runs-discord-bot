@@ -636,7 +636,7 @@ async def remind_day_before():
                 reacted_unsure.add(user.id)
 
     event_info = re.search('@everyone\n((\n|.)*)React 👍', last_booked_msg.content).group(1)
-    msg = f'🏐 Just a reminder that we are playing tomorrow at:\n{event_info}\n'
+    msg = f'🏐 Just a reminder that we are playing tomorrow at:\n{event_info}'
     if reacted_going:
         msg += f'Going ({len(reacted_going)}):\n'
         for user_id in reacted_going:

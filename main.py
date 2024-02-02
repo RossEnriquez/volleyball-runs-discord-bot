@@ -593,12 +593,6 @@ async def remind_plus_one():
     utils_ref.document('last_plus_one_msg').update({'id': sent_msg.id})
 
 
-@bot.command(name='fetchlatestmessages')
-async def on_fetch_latest(ctx):
-    utils_ref.document('last_plus_one_msg').update({'id': announcement_channel.last_message_id})
-    print('updated plus one msg!')
-
-
 async def remind_day_before():
     reacted_going = set()
     reacted_unsure = set()
@@ -641,30 +635,30 @@ async def remind_day_before():
             if not user.bot:
                 reacted_unsure.add(user.id)
 
-    event_info = re.search('@everyone\n(.*)\nReact 👍/👎', last_booked_msg.content)
+    event_info = re.search('@everyone\n(.*)React 👍/👎', last_booked_msg.content).group(1)
     msg = f'Just a reminder that we are playing tomorrow at:\n{event_info}\n'
     if reacted_going:
         msg += 'Going: '
         for user_id in reacted_going:
-            msg += f'@<{user_id}>'
+            msg += f'@<{user_id}> '
         msg += '\n\n'
 
     if reacted_plus_one:
         msg += 'With plus ones: '
         for user_id in reacted_plus_one:
-            msg += f'@<{user_id}>'
+            msg += f'@<{user_id}> '
         msg += '\n\n'
 
     if reacted_plus_two:
         msg += 'With plus twos: '
         for user_id in reacted_plus_two:
-            msg += f'@<{user_id}>'
+            msg += f'@<{user_id}> '
         msg += '\n\n'
 
     if reacted_unsure:
         msg += 'Please like or dislike ASAP: '
-        for user_id in reacted_plus_two:
-            msg += f'@<{user_id}>'
+        for user_id in reacted_unsure:
+            msg += f'@<{user_id}> '
         msg += '\n\n'
 
     await control_channel.send(msg)

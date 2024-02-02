@@ -635,30 +635,31 @@ async def remind_day_before():
             if not user.bot:
                 reacted_unsure.add(user.id)
 
-    event_info = re.search('@everyone\n((\n|.)*)\nReact', last_booked_msg.content).group(1)
+    print(last_booked_msg.content)
+    event_info = re.search('@everyone\n((\n|.)*)\n\n', last_booked_msg.content).group(1)
     msg = f'🏐 Just a reminder that we are playing tomorrow at:\n{event_info}\n'
     if reacted_going:
-        msg += 'Going: '
+        msg += f'Going ({len(reacted_going)}):\n'
         for user_id in reacted_going:
-            msg += f'@<{user_id}> '
+            msg += f'<@{user_id}> '
         msg += '\n\n'
 
     if reacted_plus_one:
-        msg += 'With plus ones: '
+        msg += f'With plus ones (+{len(reacted_plus_one)}):\n'
         for user_id in reacted_plus_one:
-            msg += f'@<{user_id}> '
+            msg += f'<@{user_id}> '
         msg += '\n\n'
 
     if reacted_plus_two:
-        msg += 'With plus twos: '
+        msg += f'With plus twos (+{2 * len(reacted_plus_two)}):\n'
         for user_id in reacted_plus_two:
-            msg += f'@<{user_id}> '
+            msg += f'<@{user_id}> '
         msg += '\n\n'
 
     if reacted_unsure:
-        msg += 'Please like or dislike ASAP: '
+        msg += 'Please like or dislike ASAP:\n'
         for user_id in reacted_unsure:
-            msg += f'@<{user_id}> '
+            msg += f'<@{user_id}> '
         msg += '\n\n'
 
     await control_channel.send(msg)

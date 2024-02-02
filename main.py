@@ -376,7 +376,7 @@ async def on_raw_reaction_add(payload):
     if last_plus_one_msg_id is None:
         last_start_msg_id = utils_ref.document('last_plus_one_msg').get().to_dict()['id']
 
-    time_now = datetime.datetime.now().strftime("%H:%M:%S")
+    time_now = datetime.now().strftime("%H:%M:%S")
     if message.id == last_booked_msg_id:
         if emoji == '👍':
             await logs_channel.send(
@@ -444,7 +444,7 @@ async def on_raw_reaction_remove(payload):
     if message.id != last_booked_msg_id:
         return
 
-    time_now = datetime.datetime.now().strftime("%H:%M:%S")
+    time_now = datetime.now().strftime("%H:%M:%S")
     if emoji == '👍':
         await logs_channel.send(
             f'```[INFO][{time_now}] {user.display_name} REMOVED A LIKE 👍 from the last booked message```')
@@ -507,7 +507,7 @@ async def remind_start():
             not_reacted_msg += f'<@{user.id}> '
 
     # everybody reacted
-    time_now = datetime.datetime.now().strftime("%H:%M:%S")
+    time_now = datetime.now().strftime("%H:%M:%S")
     if not not_reacted_msg:
         await logs_channel.send(
             f'```[INFO][{time_now}] Reminder for booked message tried to send, but everybody reacted accordingly!```')
@@ -548,7 +548,7 @@ async def remind_booked():
             not_reacted_msg += f'<@{user.id}> '
 
     # everybody reacted
-    time_now = datetime.datetime.now().strftime("%H:%M:%S")
+    time_now = datetime.now().strftime("%H:%M:%S")
     if not not_reacted_msg:
         await logs_channel.send(
             f'```[INFO][{time_now}] Reminder for booked message tried to send, but everybody reacted accordingly!```')
@@ -574,7 +574,7 @@ async def remind_plus_one():
                 reacted.add(user.id)
 
     # nobody liked the message :(
-    time_now = datetime.datetime.now().strftime("%H:%M:%S")
+    time_now = datetime.now().strftime("%H:%M:%S")
     if not reacted:
         await logs_channel.send(
             f'```[INFO][{time_now}] Reminder for plus ones tried to send, but nobody reacted 👍 to the'

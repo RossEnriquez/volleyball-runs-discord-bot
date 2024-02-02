@@ -278,7 +278,6 @@ async def sort_then_message(ctx, users, embed_config, top_user_count):
         description=embed_config['description'],
         colour=embed_config['colour'],
     )
-    print(embed_config['description'])
     embed.set_footer(text=embed_config['footer'])
     embed.add_field(name='', value='', inline=False)
     await ctx.channel.send(embed=embed)
@@ -483,7 +482,8 @@ def add_user_to_db(user):
         'username': user.name + discriminator,
         'nickname': user.display_name,
         'streak': 0,
-        'last_streak': 0
+        'last_streak': 0,
+        'total_times_came': 0
     })
 
 

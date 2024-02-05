@@ -45,10 +45,10 @@ token = config.TOKEN
 @bot.event
 async def on_ready():
     global announcement_channel, control_channel, logs_channel, server
-    server = bot.get_guild(server_id)
-    announcement_channel = server.get_channel(config.ANNOUNCEMENT_CHANNEL_ID)
-    control_channel = server.get_channel(config.CONTROL_CHANNEL_ID)
-    logs_channel = server.get_channel(config.LOGS_CHANNEL_ID)
+    server = await bot.fetch_guild(server_id)
+    announcement_channel = await server.fetch_channel(config.ANNOUNCEMENT_CHANNEL_ID)
+    control_channel = await server.fetch_channel(config.CONTROL_CHANNEL_ID)
+    logs_channel = await server.fetch_channel(config.LOGS_CHANNEL_ID)
 
     # check if reminders need to be sent out
     reminder_no_response_start = reminders_ref.document('no_response_start').get().to_dict()
@@ -135,7 +135,8 @@ async def on_booked(ctx, loc, date, time):
     if last_start_msg_id is None:
         last_start_msg_id = utils_ref.document('last_start_msg').get().to_dict()['id']
 
-    last_voting_msg = await announcement_channel.fetch_message(last_start_msg_id)
+    last_voting_msg = announcement_channel.get_message(last_start_msg_id) or \
+                      await announcement_channel.fetch_message(last_start_msg_id)
     sent_msg = await last_voting_msg.reply(reply_msg)
 
     # store last booked message id
@@ -360,9 +361,9 @@ async def send_reminder_day_before():
 
 @bot.event
 async def on_raw_reaction_add(payload):
-    channel = server.get_channel(payload.channel_id)
-    user = server.get_member(payload.user_id)
-    message = await channel.fetch_message(payload.message_id)
+    channel = server.get_channel(payload.channel_id) or await server.fetch_channel(payload.channel_id)
+    user = server.get_member(payload.user_id) or await server.fetch_member(payload.user_id)
+    message = channel.get_message(payload.user_id) or await channel.fetch_message(payload.message_id)
     emoji = str(payload.emoji)
 
     if channel.id != announcement_channel.id or user.bot:
@@ -417,7 +418,6 @@ async def on_raw_reaction_add(payload):
             return
 
     elif message.id == last_plus_one_msg_id:
-        print(f'{emoji} vs. ☝️ = {emoji == "☝"️}')
         if emoji == '☝️':
             await logs_channel.send(f'```[INFO][{time_now}] {user.nick} has a PLUS ONE ☝️ for the run```')
 
@@ -427,10 +427,9 @@ async def on_raw_reaction_add(payload):
 
 @bot.event
 async def on_raw_reaction_remove(payload):
-    channel = server.get_channel(payload.channel_id)
-    user = server.get_member(payload.user_id)
-    message = await channel.fetch_message(payload.message_id)
-
+    channel = server.get_channel(payload.channel_id) or await server.fetch_channel(payload.channel_id)
+    user = server.get_member(payload.user_id) or await server.fetch_member(payload.user_id)
+    message = channel.get_message(payload.user_id) or await channel.fetch_message(payload.message_id)
     emoji = str(payload.emoji)
 
     if channel.id != announcement_channel.id or user.bot:
@@ -501,7 +500,8 @@ async def remind_start():
     global last_start_msg_id
     if last_start_msg_id is None:
         last_start_msg_id = utils_ref.document('last_start_msg').get().to_dict()['id']
-    last_start_msg = await announcement_channel.fetch_message(last_start_msg_id)
+    last_start_msg = announcement_channel.get_message(last_start_msg_id) or \
+                     await announcement_channel.fetch_message(last_start_msg_id)
 
     # collect users who have reacted
     for reaction in last_start_msg.reactions:
@@ -532,11 +532,13 @@ async def remind_booked():
     global last_booked_msg_id, last_start_msg_id
     if last_booked_msg_id is None:
         last_booked_msg_id = utils_ref.document('last_booked_msg').get().to_dict()['id']
-    last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
+    last_booked_msg = announcement_channel.get_message(last_booked_msg_id) or \
+                      await announcement_channel.fetch_message(last_booked_msg_id)
 
     if last_start_msg_id is None:
         last_start_msg_id = utils_ref.document('last_start_msg').get().to_dict()['id']
-    last_start_msg = await announcement_channel.fetch_message(last_start_msg_id)
+    last_start_msg = announcement_channel.get_message(last_start_msg_id) or \
+                     await announcement_channel.fetch_message(last_start_msg_id)
 
     # collect users who have reacted to last booked message
     for reaction in last_booked_msg.reactions:
@@ -572,7 +574,8 @@ async def remind_plus_one():
     global last_booked_msg_id, last_plus_one_msg_id
     if last_booked_msg_id is None:
         last_booked_msg_id = utils_ref.document('last_booked_msg').get().to_dict()['id']
-    last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
+    last_booked_msg = announcement_channel.get_message(last_booked_msg_id) or \
+                      await announcement_channel.fetch_message(last_booked_msg_id)
 
     # collect users who liked the last booked message
     for reaction in last_booked_msg.reactions:
@@ -610,11 +613,13 @@ async def remind_day_before():
     global last_booked_msg_id, last_plus_one_msg_id
     if last_booked_msg_id is None:
         last_booked_msg_id = utils_ref.document('last_booked_msg').get().to_dict()['id']
-    last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
+    last_booked_msg = announcement_channel.get_message(last_booked_msg_id) or \
+                      await announcement_channel.fetch_message(last_booked_msg_id)
 
     if last_plus_one_msg_id is None:
         last_plus_one_msg_id = utils_ref.document('last_plus_one_msg').get().to_dict()['id']
-    last_plus_one_msg = await announcement_channel.fetch_message(last_plus_one_msg_id)
+    last_plus_one_msg = announcement_channel.get_message(last_plus_one_msg_id) or \
+                        await announcement_channel.fetch_message(last_plus_one_msg_id)
 
     # collect users who liked the last booked message
     for reaction in last_booked_msg.reactions:
@@ -687,4 +692,3 @@ def run_reminder(reminder, do_reminder):
 
 
 bot.run(token)
-

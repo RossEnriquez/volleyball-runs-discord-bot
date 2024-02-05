@@ -374,7 +374,7 @@ async def on_raw_reaction_add(payload):
     if last_start_msg_id is None:
         last_start_msg_id = utils_ref.document('last_start_msg').get().to_dict()['id']
     if last_plus_one_msg_id is None:
-        last_start_msg_id = utils_ref.document('last_plus_one_msg').get().to_dict()['id']
+        last_plus_one_msg_id = utils_ref.document('last_plus_one_msg').get().to_dict()['id']
 
     time_now = datetime.now().strftime("%H:%M:%S")
     if message.id == last_booked_msg_id:
@@ -435,9 +435,11 @@ async def on_raw_reaction_remove(payload):
     if channel.id != announcement_channel.id or user.bot:
         return
 
-    global last_booked_msg_id
+    global last_booked_msg_id, last_plus_one_msg_id
     if last_booked_msg_id is None:
         last_booked_msg_id = utils_ref.document('last_booked_msg').get().to_dict()['id']
+    if last_plus_one_msg_id is None:
+        last_plus_one_msg_id = utils_ref.document('last_plus_one_msg').get().to_dict()['id']
 
     time_now = datetime.now().strftime("%H:%M:%S")
     if message.id == last_booked_msg_id:

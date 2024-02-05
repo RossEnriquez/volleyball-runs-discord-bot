@@ -417,6 +417,7 @@ async def on_raw_reaction_add(payload):
             return
 
     elif message.id == last_plus_one_msg_id:
+        print(f'{emoji} vs. ☝️ = {emoji == "☝"️}')
         if emoji == '☝️':
             await logs_channel.send(f'```[INFO][{time_now}] {user.nick} has a PLUS ONE ☝️ for the run```')
 

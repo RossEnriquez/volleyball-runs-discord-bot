@@ -95,7 +95,7 @@ async def on_start(ctx, start, days):
     # store last start message id
     global last_start_msg_id
     last_start_msg_id = sent_msg.id
-    utils_ref.document('last_start_msg').update({'id': sent_msg.id})
+    utils_ref.document('last_start_msg').update({'id': str(sent_msg.id)})
 
     # add reactions to last start message
     for emoji in start_emojis:
@@ -133,14 +133,14 @@ async def on_booked(ctx, loc, date, time):
     global last_start_msg_id, last_booked_msg_id
     # get last start message id
     if last_start_msg_id is None:
-        last_start_msg_id = utils_ref.document('last_start_msg').get().to_dict()['id']
+        last_start_msg_id = int(utils_ref.document('last_start_msg').get().to_dict()['id'])
 
     last_voting_msg = await announcement_channel.fetch_message(last_start_msg_id)
     sent_msg = await last_voting_msg.reply(reply_msg)
 
     # store last booked message id
     last_booked_msg_id = sent_msg.id
-    utils_ref.document('last_booked_msg').update({'id': sent_msg.id})
+    utils_ref.document('last_booked_msg').update({'id': str(sent_msg.id)})
 
     # add reactions to last booked message
     for emoji in booked_emojis:
@@ -370,11 +370,11 @@ async def on_raw_reaction_add(payload):
 
     global last_booked_msg_id, last_start_msg_id, last_plus_one_msg_id
     if last_booked_msg_id is None:
-        last_booked_msg_id = utils_ref.document('last_booked_msg').get().to_dict()['id']
+        last_booked_msg_id = int(utils_ref.document('last_booked_msg').get().to_dict()['id'])
     if last_start_msg_id is None:
-        last_start_msg_id = utils_ref.document('last_start_msg').get().to_dict()['id']
+        last_start_msg_id = int(utils_ref.document('last_start_msg').get().to_dict()['id'])
     if last_plus_one_msg_id is None:
-        last_plus_one_msg_id = utils_ref.document('last_plus_one_msg').get().to_dict()['id']
+        last_plus_one_msg_id = int(utils_ref.document('last_plus_one_msg').get().to_dict()['id'])
 
     time_now = datetime.now().strftime("%H:%M:%S")
     if message.id == last_booked_msg_id:
@@ -436,9 +436,9 @@ async def on_raw_reaction_remove(payload):
 
     global last_booked_msg_id, last_plus_one_msg_id
     if last_booked_msg_id is None:
-        last_booked_msg_id = utils_ref.document('last_booked_msg').get().to_dict()['id']
+        last_booked_msg_id = int(utils_ref.document('last_booked_msg').get().to_dict()['id'])
     if last_plus_one_msg_id is None:
-        last_plus_one_msg_id = utils_ref.document('last_plus_one_msg').get().to_dict()['id']
+        last_plus_one_msg_id = int(utils_ref.document('last_plus_one_msg').get().to_dict()['id'])
 
     time_now = datetime.now().strftime("%H:%M:%S")
     if message.id == last_booked_msg_id:
@@ -498,7 +498,7 @@ async def remind_start():
     reacted = set()
     global last_start_msg_id
     if last_start_msg_id is None:
-        last_start_msg_id = utils_ref.document('last_start_msg').get().to_dict()['id']
+        last_start_msg_id = int(utils_ref.document('last_start_msg').get().to_dict()['id'])
     last_start_msg = await announcement_channel.fetch_message(last_start_msg_id)
 
     # collect users who have reacted
@@ -529,11 +529,11 @@ async def remind_booked():
     reacted_x = set()
     global last_booked_msg_id, last_start_msg_id
     if last_booked_msg_id is None:
-        last_booked_msg_id = utils_ref.document('last_booked_msg').get().to_dict()['id']
+        last_booked_msg_id = int(utils_ref.document('last_booked_msg').get().to_dict()['id'])
     last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
 
     if last_start_msg_id is None:
-        last_start_msg_id = utils_ref.document('last_start_msg').get().to_dict()['id']
+        last_start_msg_id = int(utils_ref.document('last_start_msg').get().to_dict()['id'])
     last_start_msg = await announcement_channel.fetch_message(last_start_msg_id)
 
     # collect users who have reacted to last booked message
@@ -569,7 +569,7 @@ async def remind_plus_one():
     reacted = set()
     global last_booked_msg_id, last_plus_one_msg_id
     if last_booked_msg_id is None:
-        last_booked_msg_id = utils_ref.document('last_booked_msg').get().to_dict()['id']
+        last_booked_msg_id = int(utils_ref.document('last_booked_msg').get().to_dict()['id'])
     last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
 
     # collect users who liked the last booked message
@@ -597,7 +597,7 @@ async def remind_plus_one():
     await sent_msg.add_reaction('✌️')
 
     last_plus_one_msg_id = sent_msg.id
-    utils_ref.document('last_plus_one_msg').update({'id': sent_msg.id})
+    utils_ref.document('last_plus_one_msg').update({'id': str(sent_msg.id)})
 
 
 async def remind_day_before():
@@ -607,11 +607,11 @@ async def remind_day_before():
     reacted_plus_two = set()
     global last_booked_msg_id, last_plus_one_msg_id
     if last_booked_msg_id is None:
-        last_booked_msg_id = utils_ref.document('last_booked_msg').get().to_dict()['id']
+        last_booked_msg_id = int(utils_ref.document('last_booked_msg').get().to_dict()['id'])
     last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
 
     if last_plus_one_msg_id is None:
-        last_plus_one_msg_id = utils_ref.document('last_plus_one_msg').get().to_dict()['id']
+        last_plus_one_msg_id = int(utils_ref.document('last_plus_one_msg').get().to_dict()['id'])
     last_plus_one_msg = await announcement_channel.fetch_message(last_plus_one_msg_id)
 
     # collect users who liked the last booked message
@@ -673,15 +673,17 @@ async def remind_day_before():
 
 # Checks if the reminder should be sent out and if so, schedules a task
 def run_reminder(reminder, do_reminder):
-    if reminder['should_reply']:
-        scheduled_datetime = datetime.utcfromtimestamp(reminder['scheduled_datetime'].timestamp())
+    if not reminder['should_reply']:
+        return
 
-        # scheduled date is in the past
-        if scheduled_datetime < datetime.utcnow():
-            reminders_ref.document('no_response_start').update({'should_reply': False})
+    scheduled_datetime = datetime.utcfromtimestamp(reminder['scheduled_datetime'].timestamp())
 
-        do_reminder.change_interval(time=scheduled_datetime.time())
-        do_reminder.start()
+    # scheduled date is in the past
+    if scheduled_datetime < datetime.utcnow():
+        reminders_ref.document('no_response_start').update({'should_reply': False})
+
+    do_reminder.change_interval(time=scheduled_datetime.time())
+    do_reminder.start()
 
 
 bot.run(token)

@@ -678,12 +678,11 @@ def run_reminder(reminder, do_reminder):
 
     scheduled_datetime = datetime.utcfromtimestamp(reminder['scheduled_datetime'].timestamp())
 
-    # scheduled date is in the past
-    if scheduled_datetime < datetime.utcnow():
-        reminders_ref.document('no_response_start').update({'should_reply': False})
-
-    do_reminder.change_interval(time=scheduled_datetime.time())
-    do_reminder.start()
+    # only start reminder if it's within 24h of the scheduled datetime
+    if (scheduled_datetime - datetime.utcnow()).days == 0:
+        do_reminder.change_interval(time=scheduled_datetime.time())
+        do_reminder.start()
+        print(f'Reminder set for {scheduled_datetime}')
 
 
 bot.run(token)

@@ -509,7 +509,7 @@ async def remind_start():
 
     # collect users who have not reacted
     not_reacted_msg = ''
-    for user in server.members:
+    async for user in server.fetch_members():
         if not user.bot and user.id not in reacted:
             not_reacted_msg += f'<@{user.id}> '
 
@@ -550,7 +550,7 @@ async def remind_booked():
 
     # collect users who have not reacted
     not_reacted_msg = ''
-    for user in server.members:
+    async for user in server.fetch_members():
         if not user.bot and user.id not in reacted and user.id not in reacted_x:
             not_reacted_msg += f'<@{user.id}> '
 

@@ -291,6 +291,9 @@ async def on_remind_start(ctx):
         return
     await remind_start()
 
+    reminders_ref.document('no_response_start').update({'should_reply': False})
+    send_reminder_no_response_start.cancel()
+
 
 # To remind users who haven't reacted on the booked message and didn't react with a ❌ on the start message
 @bot.command(name='remindbooked')
@@ -298,6 +301,9 @@ async def on_remind_booked(ctx):
     if ctx.author.id not in bot_admins:
         return
     await remind_booked()
+
+    reminders_ref.document('no_response_booked').update({'should_reply': False})
+    send_reminder_no_response_booked.cancel()
 
 
 # To remind users who liked the booked message to react if they have a plus one
@@ -307,6 +313,9 @@ async def on_remind_plus_one(ctx):
         return
     await remind_plus_one()
 
+    reminders_ref.document('plus_one').update({'should_reply': False})
+    send_reminder_plus_one.cancel()
+
 
 # To remind users the day before of the run
 @bot.command(name='reminddaybefore')
@@ -314,6 +323,9 @@ async def on_remind_day_before(ctx):
     if ctx.author.id not in bot_admins:
         return
     await remind_day_before()
+
+    reminders_ref.document('day_before').update({'should_reply': False})
+    send_reminder_day_before.cancel()
 
 
 # for testing purposes - can add whatever you want

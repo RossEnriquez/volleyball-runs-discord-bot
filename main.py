@@ -28,7 +28,7 @@ users_ref = db.collection('users')
 reminders_ref = db.collection('reminders')
 
 day_emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "0️⃣"]
-booked_emojis = ['👍', '👎', '❔']
+booked_emojis = ['👍', '👎']
 bot_admins = [348420855082254337, 265329123633659904]
 announcement_channel = None
 control_channel = None
@@ -641,7 +641,7 @@ async def remind_day_before():
                 if not user.bot:
                     reacted_plus_one.add(user.id)
 
-        elif reaction.emoji == '✌️️':
+        elif reaction.emoji == '✌️':
             async for user in reaction.users():
                 if not user.bot:
                     reacted_plus_two.add(user.id)

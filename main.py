@@ -186,14 +186,13 @@ async def on_booked(ctx, loc, date, time):
     send_reminder_plus_one.start()
 
     # set reminder for the day before
-    reminder_day_before_datetime = booked_date.astimezone(tz=timezone.utc) - timedelta(hours=24)
+    reminder_day_before_datetime = booked_date.astimezone(tz=timezone.utc)
     day_before_doc = reminders_ref.document('day_before')
     day_before_doc.update({
         'scheduled_datetime': reminder_day_before_datetime,
         'should_reply': True
     })
-    send_reminder_day_before.change_interval(time=reminder_day_before_datetime.time())
-    send_reminder_day_before.start()
+    run_reminder(day_before_doc.get().to_dict(), send_reminder_day_before)
 
 
 # To check the streaks leaderboard

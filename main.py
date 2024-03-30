@@ -400,7 +400,7 @@ async def on_pay(ctx, price, *args):
             continue
         async for user in reaction.users():
             if not user.bot and str(user.id) not in users_attended:
-                flops.add(user.nick)
+                flops.add(user)
 
     # collect nicknames of who didn't react
     for reaction in last_start_msg.reactions:
@@ -414,11 +414,19 @@ async def on_pay(ctx, price, *args):
         if user_id not in reacted_ids:
             no_reaction_nicks.add(user.nick)
 
-    flops = ', '.join(flops)
-    no_reaction_nicks = ', '.join(no_reaction_nicks)
+    flops_msg = ''
+    for flop in flops:
+        flops_msg += f'{flop.nick} '
+        # update flops stats
+        user_doc = users_ref.document(str(flop.id))
+        if not user_doc.get().exists:
+            add_user_to_db(user)
+        user_info = user_doc.get().to_dict()
+        user_doc.update({'flops': user_info['flops'] + 1})
+
     await logs_channel.send(
         f'```[INFO][{time_now}] Payment message sent. Important notes:\n\n'
-        f'Flops: {flops}\n\nNo reaction: {no_reaction_nicks}```')
+        f'Flops: {flops_msg}\n\nNo reaction: {no_reaction_nicks}```')
 
 
 # for testing purposes - can add whatever you want
@@ -562,7 +570,8 @@ def add_user_to_db(user):
         'username': user.name + discriminator,
         'nickname': user.nick,
         'streak': 0,
-        'total_times_came': 0
+        'total_times_came': 0,
+        'flops': 0
     })
 
 

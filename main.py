@@ -333,6 +333,7 @@ async def on_pay(ctx, price, *args):
     if ctx.author.id not in bot_admins:
         return
 
+    server_users = set()
     users_attended = set()
     pay_message = f'Thanks for coming out! Can I please get an ET of **${price}** to `esantiago@rogers.com` 🙏\n'
     for user_list in args:
@@ -361,10 +362,13 @@ async def on_pay(ctx, price, *args):
                              'total_times_came': user_info['total_times_came'] + 1})
         pay_message += '\n'
 
-    # reset streak back to 0 for those who didn't go
     async for user in server.fetch_members():
         if user.bot:
             continue
+        server_users.add(user)
+
+    # reset streak back to 0 for those who didn't go
+    for user in server_users:
         user_id = str(user.id)
         if user_id not in users_attended:
             user_doc = users_ref.document(user_id)
@@ -374,6 +378,47 @@ async def on_pay(ctx, price, *args):
             user_doc.update({'streak': 0})
 
     await announcement_channel.send(pay_message)
+
+    # log for important notes (flops + who didn't react)
+    global last_booked_msg_id, last_start_msg_id
+    if last_booked_msg_id is None:
+        last_booked_msg_id = int(utils_ref.document('last_booked_msg').get().to_dict()['id'])
+    last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
+
+    if last_start_msg_id is None:
+        last_start_msg_id = int(utils_ref.document('last_start_msg').get().to_dict()['id'])
+    last_start_msg = await announcement_channel.fetch_message(last_start_msg_id)
+
+    time_now = datetime.now().strftime("%H:%M:%S")
+    flops = set()
+    reacted_ids = set()
+    no_reaction_nicks = set()
+
+    # collect flops
+    for reaction in last_booked_msg.reactions:
+        if reaction.emoji != '👍':
+            continue
+        async for user in reaction.users():
+            if not user.bot and str(user.id) not in users_attended:
+                flops.add(user.nick)
+
+    # collect nicknames of who didn't react
+    for reaction in last_start_msg.reactions:
+        async for user in reaction.users():
+            reacted_ids.add(user.id)
+    for reaction in last_booked_msg.reactions:
+        async for user in reaction.users():
+            reacted_ids.add(user.id)
+    for user in server_users:
+        user_id = user.id
+        if user_id not in reacted_ids:
+            no_reaction_nicks.add(user.nick)
+
+    flops = ', '.join(flops)
+    no_reaction_nicks = ', '.join(no_reaction_nicks)
+    await logs_channel.send(
+        f'```[INFO][{time_now}] Payment message sent. Important notes:\n\n'
+        f'Flops: {flops}\n\nNo reaction: {no_reaction_nicks}```')
 
 
 # for testing purposes - can add whatever you want

@@ -441,25 +441,10 @@ async def on_raw_reaction_add(payload):
         if emoji == '👍':
             await logs_channel.send(
                 f'```[INFO][{time_now}] {user.nick} LIKED 👍 the last booked message```')
-            user_doc = users_ref.document(str(user.id))
-            if not user_doc.get().exists:
-                add_user_to_db(user)
-            user_info = user_doc.get().to_dict()
-            user_doc.update({'streak': user_info['streak'] + 1,
-                             'last_streak': user_info['streak'] + 1,
-                             'total_times_came': user_info['total_times_came'] + 1})
 
         elif emoji == '👎':
             await logs_channel.send(
                 f'```[INFO][{time_now}] {user.nick} DISLIKED 👎 the last booked message```')
-            user_doc = users_ref.document(str(user.id))
-            if not user_doc.get().exists:
-                add_user_to_db(user)
-            user_doc.update({'streak': 0})
-
-        # elif emoji == '❔':
-        #     await logs_channel.send(
-        #         f'```[INFO][{time_now}] {user.nick} QUESTIONED ❔ the last booked message```')
 
     elif message.id == last_start_msg_id:
         if emoji == '❌':
@@ -505,27 +490,10 @@ async def on_raw_reaction_remove(payload):
         if emoji == '👍':
             await logs_channel.send(
                 f'```[INFO][{time_now}] {user.nick} REMOVED A LIKE 👍 from the last booked message```')
-            user_doc = users_ref.document(str(user.id))
-            if not user_doc.get().exists:
-                add_user_to_db(user)
-            user_info = user_doc.get().to_dict()
-            if user_info['streak'] > 0:
-                user_doc.update({'streak': user_info['streak'] - 1,
-                                 'last_streak': user_info['streak'] - 1})
-            user_doc.update({'total_times_came': user_info['total_times_came'] - 1})
 
         elif emoji == '👎':
             await logs_channel.send(
                 f'```[INFO][{time_now}] {user.nick} REMOVED A DISLIKE 👎 from the last booked message```')
-            user_doc = users_ref.document(str(user.id))
-            if not user_doc.get().exists:
-                add_user_to_db(user)
-            user_info = user_doc.get().to_dict()
-            user_doc.update({'streak': user_info['last_streak']})
-
-        elif emoji == '❔':
-            await logs_channel.send(
-                f'```[INFO][{time_now}] {user.nick} REMOVED A QUESTION MARK ❔ from the last booked message```')
 
     elif message.id == last_plus_one_msg_id:
         if emoji == '☝️':
@@ -692,14 +660,6 @@ async def remind_day_before():
             async for user in reaction.users():
                 if not user.bot:
                     reacted_plus_two.add(user.id)
-
-    # collect users who have reacted ❔ to last booked message
-    # for reaction in last_booked_msg.reactions:
-    #     if reaction.emoji != '❔':
-    #         continue
-    #     async for user in reaction.users():
-    #         if not user.bot:
-    #             reacted_unsure.add(user.id)
 
     event_info = re.search('@everyone\n((\n|.)*)React 👍', last_booked_msg.content).group(1)
     msg = f'🏐 Just a reminder that we are playing tomorrow at:\n{event_info}'

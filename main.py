@@ -327,6 +327,55 @@ async def on_remind_day_before(ctx):
     send_reminder_day_before.cancel()
 
 
+# $pay 11.97 "1 @user1 @user2..." "2 @user3 @user4..."
+@bot.command(name='pay')
+async def on_pay(ctx, price, *args):
+    if ctx.author.id not in bot_admins:
+        return
+
+    users_attended = set()
+    pay_message = f'Thanks for coming out! Can I please get an ET of **${price}** to `esantiago@rogers.com` 🙏\n'
+    for user_list in args:
+        users = user_list.split()
+        pay_count = int(users[0])
+        users = users[1:]
+        pay_message += '\n'
+        for user in users:
+            if not user:
+                continue
+            pay_message += user + ' '
+            if pay_count > 1:
+                pay_message += f'x{pay_count} '
+
+            # update stats
+            user_id = re.search('<@(\\d+)>', user).group(1)
+            users_attended.add(user_id)
+            user_doc = users_ref.document(user_id)
+            if not user_doc.get().exists:
+                add_user_to_db(user)
+            user_info = user_doc.get().to_dict()
+
+            # increase streak + total for those who went
+            user_doc.update({'streak': user_info['streak'] + 1,
+                             'last_streak': user_info['streak'] + 1,
+                             'total_times_came': user_info['total_times_came'] + 1})
+        pay_message += '\n'
+
+    # reset streak back to 0 for those who didn't go
+    async for user in server.fetch_members():
+        if user.bot:
+            continue
+        user_id = str(user.id)
+        if user_id not in users_attended:
+            user_doc = users_ref.document(user_id)
+            if not user_doc.get().exists:
+                add_user_to_db(user)
+
+            user_doc.update({'streak': 0})
+
+    await announcement_channel.send(pay_message)
+
+
 # for testing purposes - can add whatever you want
 @bot.command(name='test')
 async def test(ctx):
@@ -408,9 +457,9 @@ async def on_raw_reaction_add(payload):
                 add_user_to_db(user)
             user_doc.update({'streak': 0})
 
-        elif emoji == '❔':
-            await logs_channel.send(
-                f'```[INFO][{time_now}] {user.nick} QUESTIONED ❔ the last booked message```')
+        # elif emoji == '❔':
+        #     await logs_channel.send(
+        #         f'```[INFO][{time_now}] {user.nick} QUESTIONED ❔ the last booked message```')
 
     elif message.id == last_start_msg_id:
         if emoji == '❌':
@@ -500,7 +549,6 @@ def add_user_to_db(user):
         'username': user.name + discriminator,
         'nickname': user.nick,
         'streak': 0,
-        'last_streak': 0,
         'total_times_came': 0
     })
 
@@ -646,12 +694,12 @@ async def remind_day_before():
                     reacted_plus_two.add(user.id)
 
     # collect users who have reacted ❔ to last booked message
-    for reaction in last_booked_msg.reactions:
-        if reaction.emoji != '❔':
-            continue
-        async for user in reaction.users():
-            if not user.bot:
-                reacted_unsure.add(user.id)
+    # for reaction in last_booked_msg.reactions:
+    #     if reaction.emoji != '❔':
+    #         continue
+    #     async for user in reaction.users():
+    #         if not user.bot:
+    #             reacted_unsure.add(user.id)
 
     event_info = re.search('@everyone\n((\n|.)*)React 👍', last_booked_msg.content).group(1)
     msg = f'🏐 Just a reminder that we are playing tomorrow at:\n{event_info}'

@@ -195,139 +195,8 @@ async def on_booked(ctx, loc, date, time):
     run_reminder(day_before_doc.get().to_dict(), send_reminder_day_before)
 
 
-# To check the streaks leaderboard
-@bot.command(name='streaks')
-async def check_streaks(ctx):
-    users_dict = {}
-    users = users_ref.stream()
-    for user in users:
-        user_info = user.to_dict()
-        users_dict[user_info['nickname']] = user_info['streak']
-
-    embed_config = {
-        'title': '🔥 STREAKS 🔥',
-        'type': 'rich',
-        'description': '**Check to see who has the longest streak of going to the 🏐 runs!**\n\n',
-        'colour': discord.Colour.orange(),
-        'footer': 'Tip: Make sure to react to the BOOKED messages to participate!'
-    }
-
-    await sort_then_message(ctx, users_dict, embed_config, 5)
-
-
-# To check the total leaderboard
-@bot.command(name='leaderboard')
-async def on_leaderboard(ctx):
-    users_dict = {}
-    users = users_ref.stream()
-    for user in users:
-        user_info = user.to_dict()
-        users_dict[user_info['nickname']] = user_info['total_times_came']
-
-    embed_config = {
-        'title': '🏆 LEADERBOARDS 🏆',
-        'type': 'rich',
-        'description': '**Check to see who has been to the 🏐 runs the most!**\n\n',
-        'colour': discord.Colour.gold(),
-        'footer': 'Tip: Make sure to react to the BOOKED messages to participate!'
-    }
-
-    await sort_then_message(ctx, users_dict, embed_config, 10)
-
-
-# Sorts the given user list by dict value then sends an embed to the ctx channel
-async def sort_then_message(ctx, users, embed_config, top_user_count):
-    if len(users) == 0:
-        msg = 'No users recorded yet!'
-        embed_config['description'] = msg
-        embed = discord.Embed(
-            title=embed_config['title'],
-            type=embed_config['type'],
-            description=embed_config['description'],
-            colour=embed_config['colour']
-        )
-        embed.set_footer(text=embed_config['footer'])
-        embed.add_field(name='', value='', inline=False)
-        await ctx.channel.send(embed=embed)
-        return
-
-    sorted_users = dict(sorted(users.items(), key=lambda item: item[1])[::-1])
-    for i, user in enumerate(sorted_users):
-        emoji = ''
-        if i == 0:
-            emoji = '🥇'
-        elif i == 1:
-            emoji = '🥈'
-        elif i == 2:
-            emoji = '🥉'
-        elif i >= top_user_count and user != ctx.author.display_name:
-            continue
-
-        name_with_streak = f'{user} ({users[user]})'
-        if user == ctx.author.display_name:
-            name_with_streak = '**' + name_with_streak + '** ◄'
-        embed_msg = f'{i + 1}. {emoji} {name_with_streak}'
-
-        if i >= top_user_count:
-            embed_msg = '---------------\n' + embed_msg
-        embed_config['description'] += embed_msg + '\n'
-
-    embed = discord.Embed(
-        title=embed_config['title'],
-        type=embed_config['type'],
-        description=embed_config['description'],
-        colour=embed_config['colour'],
-    )
-    embed.set_footer(text=embed_config['footer'])
-    embed.add_field(name='', value='', inline=False)
-    await ctx.channel.send(embed=embed)
-
-
-# To remind users who haven't reacted on the start message yet
-@bot.command(name='remindstart')
-async def on_remind_start(ctx):
-    if ctx.author.id not in bot_admins:
-        return
-    await remind_start()
-
-    reminders_ref.document('no_response_start').update({'should_reply': False})
-    send_reminder_no_response_start.cancel()
-
-
-# To remind users who haven't reacted on the booked message and didn't react with a ❌ on the start message
-@bot.command(name='remindbooked')
-async def on_remind_booked(ctx):
-    if ctx.author.id not in bot_admins:
-        return
-    await remind_booked()
-
-    reminders_ref.document('no_response_booked').update({'should_reply': False})
-    send_reminder_no_response_booked.cancel()
-
-
-# To remind users who liked the booked message to react if they have a plus one
-@bot.command(name='remindplusone')
-async def on_remind_plus_one(ctx):
-    if ctx.author.id not in bot_admins:
-        return
-    await remind_plus_one()
-
-    reminders_ref.document('plus_one').update({'should_reply': False})
-    send_reminder_plus_one.cancel()
-
-
-# To remind users the day before of the run
-@bot.command(name='reminddaybefore')
-async def on_remind_day_before(ctx):
-    if ctx.author.id not in bot_admins:
-        return
-    await remind_day_before()
-
-    reminders_ref.document('day_before').update({'should_reply': False})
-    send_reminder_day_before.cancel()
-
-
-# $pay 11.97 "1 @user1 @user2..." "2 @user3 @user4..."
+# To send out the pay message
+# ex. $pay 11.97 "1 @user1 @user2..." "2 @user3 @user4..."
 @bot.command(name='pay')
 async def on_pay(ctx, price, *args):
     if ctx.author.id not in bot_admins:
@@ -429,18 +298,155 @@ async def on_pay(ctx, price, *args):
         f'Flops: {flops_msg}\n\nNo reaction: {no_reaction_nicks}```')
 
 
-# for testing purposes - can add whatever you want
-@bot.command(name='test')
-async def test(ctx):
+# To check the streaks leaderboard
+@bot.command(name='streaks')
+async def check_streaks(ctx):
+    users_dict = {}
+    users = users_ref.stream()
+    for user in users:
+        user_info = user.to_dict()
+        users_dict[user_info['nickname']] = user_info['streak']
+
+    embed_config = {
+        'title': '🔥 STREAKS 🔥',
+        'type': 'rich',
+        'description': '**Check to see who has the longest streak of going to the 🏐 runs!**\n\n',
+        'colour': discord.Colour.orange(),
+        'footer': 'Tip: Make sure to react to the BOOKED messages to participate!'
+    }
+
+    await sort_then_message(ctx, users_dict, embed_config, 5)
+
+
+# To check the total leaderboard
+@bot.command(name='leaderboard')
+async def on_leaderboard(ctx):
+    users_dict = {}
+    users = users_ref.stream()
+    for user in users:
+        user_info = user.to_dict()
+        users_dict[user_info['nickname']] = user_info['total_times_came']
+
+    embed_config = {
+        'title': '🏆 LEADERBOARDS 🏆',
+        'type': 'rich',
+        'description': '**Check to see who has been to the 🏐 runs the most!**\n\n',
+        'colour': discord.Colour.gold(),
+        'footer': 'Tip: Make sure to react to the BOOKED messages to participate!'
+    }
+
+    await sort_then_message(ctx, users_dict, embed_config, 10)
+
+
+@bot.command(name='flops')
+async def on_flops(ctx):
+    users_dict = {}
+    users = users_ref.stream()
+    for user in users:
+        user_info = user.to_dict()
+        users_dict[user_info['nickname']] = user_info['flops']
+
+    embed_config = {
+        'title': '😔 FLOP COUNTS 😔',
+        'type': 'rich',
+        'description': '**Check to see who has flopped on the 🏐 runs the most**\n\n',
+        'colour': discord.Colour.fuchsia(),
+        'footer': "NOTE: Please don't flop :("
+    }
+
+    await sort_then_message(ctx, users_dict, embed_config, 5)
+
+
+# Sorts the given user list by dict value then sends an embed to the ctx channel
+async def sort_then_message(ctx, users, embed_config, top_user_count):
+    if len(users) == 0:
+        msg = 'No users recorded yet!'
+        embed_config['description'] = msg
+        embed = discord.Embed(
+            title=embed_config['title'],
+            type=embed_config['type'],
+            description=embed_config['description'],
+            colour=embed_config['colour']
+        )
+        embed.set_footer(text=embed_config['footer'])
+        embed.add_field(name='', value='', inline=False)
+        await ctx.channel.send(embed=embed)
+        return
+
+    sorted_users = dict(sorted(users.items(), key=lambda item: item[1])[::-1])
+    for i, user in enumerate(sorted_users):
+        emoji = ''
+        if i == 0:
+            emoji = '🥇'
+        elif i == 1:
+            emoji = '🥈'
+        elif i == 2:
+            emoji = '🥉'
+        elif i >= top_user_count and user != ctx.author.display_name:
+            continue
+
+        name_with_streak = f'{user} ({users[user]})'
+        if user == ctx.author.display_name:
+            name_with_streak = '**' + name_with_streak + '** ◄'
+        embed_msg = f'{i + 1}. {emoji} {name_with_streak}'
+
+        if i >= top_user_count:
+            embed_msg = '---------------\n' + embed_msg
+        embed_config['description'] += embed_msg + '\n'
+
+    embed = discord.Embed(
+        title=embed_config['title'],
+        type=embed_config['type'],
+        description=embed_config['description'],
+        colour=embed_config['colour'],
+    )
+    embed.set_footer(text=embed_config['footer'])
+    embed.add_field(name='', value='', inline=False)
+    await ctx.channel.send(embed=embed)
+
+
+# To remind users who haven't reacted on the start message yet
+@bot.command(name='remindstart')
+async def on_remind_start(ctx):
     if ctx.author.id not in bot_admins:
         return
-    user = ctx.author
-    if user.discriminator != '0':
-        discriminator = '#' + user.discriminator
-    else:
-        discriminator = ''
+    await remind_start()
 
-    await ctx.channel.send(f'user.id = {user.id}\nusername = {user.name + discriminator}\nnickname = {user.nick}')
+    reminders_ref.document('no_response_start').update({'should_reply': False})
+    send_reminder_no_response_start.cancel()
+
+
+# To remind users who haven't reacted on the booked message and didn't react with a ❌ on the start message
+@bot.command(name='remindbooked')
+async def on_remind_booked(ctx):
+    if ctx.author.id not in bot_admins:
+        return
+    await remind_booked()
+
+    reminders_ref.document('no_response_booked').update({'should_reply': False})
+    send_reminder_no_response_booked.cancel()
+
+
+# To remind users who liked the booked message to react if they have a plus one
+@bot.command(name='remindplusone')
+async def on_remind_plus_one(ctx):
+    if ctx.author.id not in bot_admins:
+        return
+    await remind_plus_one()
+
+    reminders_ref.document('plus_one').update({'should_reply': False})
+    send_reminder_plus_one.cancel()
+
+
+# To remind users the day before of the run
+@bot.command(name='reminddaybefore')
+async def on_remind_day_before(ctx):
+    if ctx.author.id not in bot_admins:
+        return
+    await remind_day_before()
+
+    reminders_ref.document('day_before').update({'should_reply': False})
+    send_reminder_day_before.cancel()
 
 
 @tasks.loop(count=1)

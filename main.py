@@ -223,7 +223,11 @@ async def on_pay(ctx, price, *args):
 
             # update stats
             user_nickname = re.search('@(\\w+)', user).group(1)
-            user_id = nickname_to_id[user_nickname]
+            # numeric match: user was mentioned and user_id was given
+            if user_nickname.isnumeric():
+                user_id = user_nickname
+            else:
+                user_id = nickname_to_id[user_nickname]
             if user_id is None:
                 continue
 

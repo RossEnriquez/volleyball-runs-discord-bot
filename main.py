@@ -203,6 +203,13 @@ async def on_pay(ctx, price, *args):
         return
 
     server_users = set()
+    nickname_to_id = {}
+    async for user in server.fetch_members():
+        if user.bot:
+            continue
+        server_users.add(user)
+        nickname_to_id[user.nick] = str(user.id)
+
     users_attended = set()
     pay_message = f'Thanks for coming out! Can I please get an ET of **${price}** to `esantiago@rogers.com` 🙏\n'
     for user_list in args:
@@ -213,12 +220,13 @@ async def on_pay(ctx, price, *args):
         for user in users:
             if not user:
                 continue
-            pay_message += user + ' '
-            if pay_count > 1:
-                pay_message += f'x{pay_count} '
 
             # update stats
-            user_id = re.search('<@(\\d+)>', user).group(1)
+            user_nickname = re.search('@(\\w+)', user).group(1)
+            user_id = nickname_to_id[user_nickname]
+            if user_id is None:
+                continue
+
             users_attended.add(user_id)
             user_doc = users_ref.document(user_id)
             if not user_doc.get().exists:
@@ -227,14 +235,12 @@ async def on_pay(ctx, price, *args):
 
             # increase streak + total for those who went
             user_doc.update({'streak': user_info['streak'] + 1,
-                             'last_streak': user_info['streak'] + 1,
                              'total_times_came': user_info['total_times_came'] + 1})
-        pay_message += '\n'
 
-    async for user in server.fetch_members():
-        if user.bot:
-            continue
-        server_users.add(user)
+            pay_message += f'<@{user_id}> '
+            if pay_count > 1:
+                pay_message += f'x{pay_count} '
+        pay_message += '\n'
 
     # reset streak back to 0 for those who didn't go
     for user in server_users:

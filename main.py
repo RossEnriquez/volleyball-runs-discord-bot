@@ -564,6 +564,11 @@ async def on_raw_reaction_remove(payload):
                 f'```[INFO][{time_now}] {user.nick} REMOVED PLUS TWO ✌️️ from the last plus one message```')
 
 
+@bot.event
+async def on_member_join(member):
+    add_user_to_db(member)
+
+
 # Adds the given user to firebase/users
 def add_user_to_db(user):
     if user.discriminator != '0':

@@ -29,7 +29,7 @@ reminders_ref = db.collection('reminders')
 
 day_emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "0️⃣"]
 booked_emojis = ['👍', '👎']
-bot_admins = [348420855082254337, 265329123633659904]
+bot_admins = [348420855082254337, 265329123633659904, 603050407891304459]
 announcement_channel = None
 control_channel = None
 logs_channel = None

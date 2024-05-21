@@ -22,7 +22,6 @@ cred = credentials.Certificate(firebase_config)
 db_app = firebase_admin.initialize_app(cred)
 db = firestore.client()
 locations_ref = db.collection('locations')
-messages_ref = db.collection('message_templates')
 utils_ref = db.collection('utils')
 users_ref = db.collection('users')
 reminders_ref = db.collection('reminders')
@@ -76,8 +75,6 @@ async def on_start(ctx, start, days):
     selected_days = days.split(',')
     # insert start date into selected days
     selected_days.insert(0, '0')
-    msg_out = messages_ref.document('start').get().to_dict()['message'].replace('\\n', '\n')
-    msg_out = msg_out.replace('[start_date]', start_date.strftime('%A `%b %d`'))
     day_msgs = ''
     start_emojis = []
 
@@ -89,7 +86,11 @@ async def on_start(ctx, start, days):
         start_emojis.append(day_emojis[i])
     start_emojis.append('❌')
 
-    msg_out = msg_out.replace('[selected_days]', day_msgs)
+    msg_out = f'VOTING TIME @everyone\n' \
+              f'React the day you are available for next week STARTING {start_date.strftime("%A `%b %d`")}\n' \
+              'WEEKDAYS(6pm-10ish)\nWEEKEND(11am-2pm)\n\n' \
+              '‼REACT WITH A ❌ ON THIS MESSAGE if you can’t attend any day‼️\n' \
+              f'{day_msgs}\n⚠️Please do one or the other so I know you are active'
     sent_msg = await announcement_channel.send(msg_out)
 
     # store last start message id
@@ -130,8 +131,8 @@ async def on_booked(ctx, loc, date, time, *notes):
         notes_msg += f'- {note}\n'
 
     reply_msg = f'BOOKED A RUN @everyone\n- 🏐 {location["name"]}\n- 📍 {location["address"]}\n' \
-                f'- 🗓️️ {booked_date.strftime("%A `%b %d`")} from `{time}`\n\n' + \
-                messages_ref.document('booked').get().to_dict()['message'].replace('\\n', '\n')
+                f'- 🗓️️ {booked_date.strftime("%A `%b %d`")} from `{time}`\n{notes_msg}\n' + \
+                'React 👍/👎 based on whether or not you are coming'
 
     global last_start_msg_id, last_booked_msg_id
     # get last start message id

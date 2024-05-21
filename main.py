@@ -114,7 +114,7 @@ async def on_start(ctx, start, days):
 
 # To send out the booked message
 @bot.command(name='booked')
-async def on_booked(ctx, loc, date, time):
+async def on_booked(ctx, loc, date, time, *notes):
     if ctx.author.id not in bot_admins:
         return
 
@@ -125,6 +125,9 @@ async def on_booked(ctx, loc, date, time):
     today = datetime.today()
     location = locations_ref.document(loc).get().to_dict()
     booked_date = datetime.strptime(str(today.year) + date, '%Y%b%d')
+    notes_msg = ''
+    for note in notes:
+        notes_msg += f'- {note}\n'
 
     reply_msg = f'BOOKED A RUN @everyone\n- 🏐 {location["name"]}\n- 📍 {location["address"]}\n' \
                 f'- 🗓️️ {booked_date.strftime("%A `%b %d`")} from `{time}`\n\n' + \

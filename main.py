@@ -180,7 +180,7 @@ async def on_booked(ctx, loc, date, time, *notes):
     send_reminder_no_response_booked.start()
 
     # set reminder for plus ones
-    reminder_plus_one_datetime = datetime.utcnow() + timedelta(hours=24)
+    reminder_plus_one_datetime = datetime.utcnow() + timedelta(hours=48)
     plus_one_doc = reminders_ref.document('plus_one')
     plus_one_doc.update({
         'scheduled_datetime': reminder_plus_one_datetime,

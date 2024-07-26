@@ -52,12 +52,12 @@ async def on_ready():
     # check if reminders need to be sent out
     reminder_no_response_start = reminders_ref.document('no_response_start').get().to_dict()
     reminder_no_response_booked = reminders_ref.document('no_response_booked').get().to_dict()
-    reminder_plus_one = reminders_ref.document('plus_one').get().to_dict()
+    # reminder_plus_one = reminders_ref.document('plus_one').get().to_dict()
     reminder_day_before = reminders_ref.document('day_before').get().to_dict()
 
     run_reminder(reminder_no_response_start, send_reminder_no_response_start)
     run_reminder(reminder_no_response_booked, send_reminder_no_response_booked)
-    run_reminder(reminder_plus_one, send_reminder_plus_one)
+    # run_reminder(reminder_plus_one, send_reminder_plus_one)
     run_reminder(reminder_day_before, send_reminder_day_before)
 
     print(f'We have logged in as {bot.user}')
@@ -139,8 +139,16 @@ async def on_booked(ctx, loc, date, time, *notes):
     if last_start_msg_id is None:
         last_start_msg_id = int(utils_ref.document('last_start_msg').get().to_dict()['id'])
 
-    last_voting_msg = await announcement_channel.fetch_message(last_start_msg_id)
-    sent_msg = await last_voting_msg.reply(reply_msg)
+    time_now = datetime.now().strftime("%H:%M:%S")
+    try:
+        last_voting_msg = await announcement_channel.fetch_message(last_start_msg_id)
+    except (discord.NotFound, discord.HTTPException) as e:
+        await logs_channel.send(
+            f'```[WARN][{time_now}] Unable to find start message with id {last_start_msg_id} in announcement channel '
+            f'to reply to with booked message, sending raw message.```')
+        sent_msg = await announcement_channel.send(reply_msg)
+    else:
+        sent_msg = await last_voting_msg.reply(reply_msg)
 
     # store last booked message id
     last_booked_msg_id = sent_msg.id
@@ -171,8 +179,8 @@ async def on_booked(ctx, loc, date, time, *notes):
 
     # set reminder for people who haven't responded to booked message
     reminder_no_response_datetime = datetime.utcnow() + timedelta(hours=12)
-    plus_one_doc = reminders_ref.document('no_response_booked')
-    plus_one_doc.update({
+    no_response_booked_doc = reminders_ref.document('no_response_booked')
+    no_response_booked_doc.update({
         'scheduled_datetime': reminder_no_response_datetime,
         'should_reply': True
     })
@@ -180,14 +188,14 @@ async def on_booked(ctx, loc, date, time, *notes):
     send_reminder_no_response_booked.start()
 
     # set reminder for plus ones
-    reminder_plus_one_datetime = datetime.utcnow() + timedelta(hours=48)
-    plus_one_doc = reminders_ref.document('plus_one')
-    plus_one_doc.update({
-        'scheduled_datetime': reminder_plus_one_datetime,
-        'should_reply': True
-    })
-    send_reminder_plus_one.change_interval(time=reminder_plus_one_datetime.time())
-    send_reminder_plus_one.start()
+    # reminder_plus_one_datetime = datetime.utcnow() + timedelta(hours=48)
+    # plus_one_doc = reminders_ref.document('plus_one')
+    # plus_one_doc.update({
+    #     'scheduled_datetime': reminder_plus_one_datetime,
+    #     'should_reply': True
+    # })
+    # send_reminder_plus_one.change_interval(time=reminder_plus_one_datetime.time())
+    # send_reminder_plus_one.start()
 
     # set reminder for the day before
     reminder_day_before_datetime = booked_date.astimezone(tz=timezone.utc)
@@ -605,7 +613,16 @@ async def remind_start():
     global last_start_msg_id
     if last_start_msg_id is None:
         last_start_msg_id = int(utils_ref.document('last_start_msg').get().to_dict()['id'])
-    last_start_msg = await announcement_channel.fetch_message(last_start_msg_id)
+
+    time_now = datetime.now().strftime("%H:%M:%S")
+    try:
+        last_start_msg = await announcement_channel.fetch_message(last_start_msg_id)
+    except (discord.NotFound, discord.HTTPException) as e:
+        await logs_channel.send(
+            f'```[ERROR][{time_now}] Unable to find start message with id {last_start_msg_id} in announcement channel, '
+            f'skipping start reminder.```')
+        return
+
 
     # collect users who have reacted
     for reaction in last_start_msg.reactions:
@@ -620,10 +637,9 @@ async def remind_start():
             not_reacted_msg += f'<@{user.id}> '
 
     # everybody reacted
-    time_now = datetime.now().strftime("%H:%M:%S")
     if not not_reacted_msg:
         await logs_channel.send(
-            f'```[INFO][{time_now}] Reminder for booked message tried to send, but everybody reacted accordingly!```')
+            f'```[INFO][{time_now}] Reminder for start message tried to send, but everybody reacted accordingly!```')
         return
 
     msg = '🔔 Reminder to react on a day!\n\n' + not_reacted_msg
@@ -636,11 +652,18 @@ async def remind_booked():
     global last_booked_msg_id, last_start_msg_id
     if last_booked_msg_id is None:
         last_booked_msg_id = int(utils_ref.document('last_booked_msg').get().to_dict()['id'])
-    last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
-
     if last_start_msg_id is None:
         last_start_msg_id = int(utils_ref.document('last_start_msg').get().to_dict()['id'])
-    last_start_msg = await announcement_channel.fetch_message(last_start_msg_id)
+
+    time_now = datetime.now().strftime("%H:%M:%S")
+    try:
+        last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
+        last_start_msg = await announcement_channel.fetch_message(last_start_msg_id)
+    except (discord.NotFound, discord.HTTPException) as e:
+        await logs_channel.send(
+            f'```[ERROR][{time_now}] Unable to find required start message with id {last_start_msg_id} OR booked '
+            f'message with id {last_booked_msg_id} in announcement channel, skipping booked reminder.```')
+        return
 
     # collect users who have reacted to last booked message
     for reaction in last_booked_msg.reactions:
@@ -661,7 +684,6 @@ async def remind_booked():
             not_reacted_msg += f'<@{user.id}> '
 
     # everybody reacted
-    time_now = datetime.now().strftime("%H:%M:%S")
     if not not_reacted_msg:
         await logs_channel.send(
             f'```[INFO][{time_now}] Reminder for booked message tried to send, but everybody reacted accordingly!```')
@@ -676,7 +698,15 @@ async def remind_plus_one():
     global last_booked_msg_id, last_plus_one_msg_id
     if last_booked_msg_id is None:
         last_booked_msg_id = int(utils_ref.document('last_booked_msg').get().to_dict()['id'])
-    last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
+
+    time_now = datetime.now().strftime("%H:%M:%S")
+    try:
+        last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
+    except (discord.NotFound, discord.HTTPException) as e:
+        await logs_channel.send(
+            f'```[ERROR][{time_now}] Unable to find booked message with id {last_booked_msg_id} in announcement '
+            f'channel, skipping plus one reminder.```')
+        return
 
     # collect users who liked the last booked message
     for reaction in last_booked_msg.reactions:
@@ -687,7 +717,6 @@ async def remind_plus_one():
                 reacted.add(user.id)
 
     # nobody liked the message :(
-    time_now = datetime.now().strftime("%H:%M:%S")
     if not reacted:
         await logs_channel.send(
             f'```[INFO][{time_now}] Reminder for plus ones tried to send, but nobody reacted 👍 to the'
@@ -708,37 +737,55 @@ async def remind_plus_one():
 
 async def remind_day_before():
     reacted_going = set()
-    reacted_unsure = set()
+    # reacted_unsure = set()
     reacted_plus_one = set()
     reacted_plus_two = set()
+    should_display_going = True
+    should_display_plus_ones_twos = True
+
+    time_now = datetime.now().strftime("%H:%M:%S")
     global last_booked_msg_id, last_plus_one_msg_id
     if last_booked_msg_id is None:
         last_booked_msg_id = int(utils_ref.document('last_booked_msg').get().to_dict()['id'])
-    last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
+    try:
+        last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
+    except (discord.NotFound, discord.HTTPException) as e:
+        await logs_channel.send(
+            f'```[ERROR][{time_now}] Unable to find booked message with id {last_booked_msg_id} in announcement '
+            f'channel, excluding `Going` section from day before reminder.```')
+        should_display_going = False
 
     if last_plus_one_msg_id is None:
         last_plus_one_msg_id = int(utils_ref.document('last_plus_one_msg').get().to_dict()['id'])
-    last_plus_one_msg = await announcement_channel.fetch_message(last_plus_one_msg_id)
+    try:
+        last_plus_one_msg = await announcement_channel.fetch_message(last_plus_one_msg_id)
+    except (discord.NotFound, discord.HTTPException) as e:
+        await logs_channel.send(
+            f'```[ERROR][{time_now}] Unable to find plus ones/twos message with id {last_booked_msg_id} in '
+            f'announcement channel, excluding `Plus Ones/Twos` sections from day before reminder.```')
+        should_display_plus_ones_twos = False
 
     # collect users who liked the last booked message
-    for reaction in last_booked_msg.reactions:
-        if reaction.emoji != '👍':
-            continue
-        async for user in reaction.users():
-            if not user.bot:
-                reacted_going.add(user.id)
+    if should_display_going:
+        for reaction in last_booked_msg.reactions:
+            if reaction.emoji != '👍':
+                continue
+            async for user in reaction.users():
+                if not user.bot:
+                    reacted_going.add(user.id)
 
     # collect users who have reacted +1/+2 to last plus one message
-    for reaction in last_plus_one_msg.reactions:
-        if reaction.emoji == '☝️':
-            async for user in reaction.users():
-                if not user.bot:
-                    reacted_plus_one.add(user.id)
+    if should_display_plus_ones_twos:
+        for reaction in last_plus_one_msg.reactions:
+            if reaction.emoji == '☝️':
+                async for user in reaction.users():
+                    if not user.bot:
+                        reacted_plus_one.add(user.id)
 
-        elif reaction.emoji == '✌️':
-            async for user in reaction.users():
-                if not user.bot:
-                    reacted_plus_two.add(user.id)
+            elif reaction.emoji == '✌️':
+                async for user in reaction.users():
+                    if not user.bot:
+                        reacted_plus_two.add(user.id)
 
     event_info = re.search('@everyone\n((\n|.)*)React 👍', last_booked_msg.content).group(1)
     msg = f'🏐 Just a reminder that we are playing tomorrow at:\n{event_info}'
@@ -760,11 +807,11 @@ async def remind_day_before():
             msg += f'<@{user_id}> '
         msg += '\n\n'
 
-    if reacted_unsure:
-        msg += 'Please like or dislike ASAP:\n'
-        for user_id in reacted_unsure:
-            msg += f'<@{user_id}> '
-        msg += '\n\n'
+    # if reacted_unsure:
+    #     msg += 'Please like or dislike ASAP:\n'
+    #     for user_id in reacted_unsure:
+    #         msg += f'<@{user_id}> '
+    #     msg += '\n\n'
 
     await last_booked_msg.reply(msg)
 

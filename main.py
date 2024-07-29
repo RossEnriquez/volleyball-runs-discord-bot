@@ -197,6 +197,12 @@ async def on_booked(ctx, loc, date, time, *notes):
     # send_reminder_plus_one.change_interval(time=reminder_plus_one_datetime.time())
     # send_reminder_plus_one.start()
 
+    # clear last plus ones msg id
+    last_plus_one_msg_doc = utils_ref.document('last_plus_one_msg')
+    last_plus_one_msg_doc.update({
+        'id': ''
+    })
+
     # set reminder for the day before
     reminder_day_before_datetime = booked_date.astimezone(tz=timezone.utc)
     day_before_doc = reminders_ref.document('day_before')

@@ -8,6 +8,7 @@ import datetime
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 import re
+import random
 
 # discord config
 intents = discord.Intents.default()
@@ -326,6 +327,97 @@ async def on_pay(ctx, price, *args):
         f'Flops: {flops_msg}\n\nNo reaction: {no_reaction_nicks}```')
 
 
+# To make even teams based on rankings
+# ex. Make 3 teams based on who's going: $maketeams 3
+@bot.command(name='maketeams')
+async def make_teams(ctx, team_count):
+    team_count = int(team_count)
+    if team_count < 1:
+        return
+
+    going = set()
+    global last_booked_msg_id, last_plus_one_msg_id
+    if last_booked_msg_id is None:
+        last_booked_msg_id = int(utils_ref.document('last_booked_msg').get().to_dict()['id'])
+
+    time_now = datetime.now().strftime("%H:%M:%S")
+    try:
+        last_booked_msg = await announcement_channel.fetch_message(last_booked_msg_id)
+    except (discord.NotFound, discord.HTTPException) as e:
+        await logs_channel.send(
+            f'```[ERROR][{time_now}] Unable to find booked message with id {last_booked_msg_id} in announcement '
+            f'channel, skipping team creation.```')
+        return
+
+    # collect users who liked the last booked message
+    for reaction in last_booked_msg.reactions:
+        if reaction.emoji != '👍':
+            continue
+        async for user in reaction.users():
+            if not user.bot:
+                going.add(user.id)
+
+    # collect rankings (rankings are currently in 4 tiers, sorted highest to lowest)
+    tiers_count = 4
+    rankings = [[] for _ in range(tiers_count)]
+    for user_id in going:
+        user_doc = users_ref.document(user_id)
+        if not user_doc.get().exists:
+            await logs_channel.send(
+                f'```[ERROR][{time_now}] Unable to find user with id {user_id} in database, skipping user in team'
+                f' creation.```')
+            return
+        user_info = user_doc.get().to_dict()
+        aura = user_info['aura']
+        user_name = user_info['nickname']
+        rankings[tiers_count - aura].append(user_name)
+
+    # build teams based on rankings
+    teams = [[] for _ in range(team_count)]
+    pick_number = 0
+    for tier in reversed(rankings):
+        random.shuffle(tier)
+        for user in tier:
+            teams[pick_number % team_count].append(user)
+            pick_number += 1
+
+    # display teams
+    embed = discord.Embed(title="👥 Teams 👥", color=discord.Colour.green(), type='rich')
+    for idx, team in enumerate(teams):
+        team_display = '\n'.join(team)
+        embed.add_field(name=f'Team {idx + 1}', value=team_display, inline=True)
+
+    await ctx.channel.send(embed=embed)
+
+
+# @bot.command(name='test')
+# async def test(ctx, team_count):
+#     team_count = int(team_count)
+#     if team_count < 1:
+#         return
+#
+#     rankings = [['aliana','chris','mj','paulG'], ['bryan','cassandra','elijah','girlie'],
+#                 ['alex','alexis','chen','danielL'], ['amar','jerome','julian','kyleP']]
+#
+#     # build teams based on rankings
+#     teams = [[] for _ in range(team_count)]
+#     pick_number = 0
+#     for tier in reversed(rankings):
+#         random.shuffle(tier)
+#         for user in tier:
+#             teams[pick_number % team_count].append(user)
+#             pick_number += 1
+#
+#     # display teams
+#     embed = discord.Embed(title="👥 Teams 👥", description='Check out your team here!', color=discord.Colour.green(),
+#                           type='rich')
+#     for idx, team in enumerate(teams):
+#         team_display = '\n'.join(team)
+#         embed.add_field(name=f'Team {idx + 1}', value=team_display, inline=True)
+#
+#     await ctx.channel.send(embed=embed)
+
+
 # To check the streaks leaderboard
 @bot.command(name='streaks')
 async def check_streaks(ctx):
@@ -612,12 +704,17 @@ def add_user_to_db(user):
         discriminator = ''
 
     user_doc = users_ref.document(str(user.id))
+    nickname = user.nick
+    if nickname is None:
+        nickname = user.name
+
     user_doc.set({
         'username': user.name + discriminator,
-        'nickname': user.nick,
+        'nickname': nickname,
         'streak': 0,
         'total_times_came': 0,
-        'flops': 0
+        'flops': 0,
+        'aura': 1
     })
 
 

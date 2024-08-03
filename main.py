@@ -357,7 +357,7 @@ async def make_teams(ctx, team_count):
             if not user.bot:
                 going.add(user.id)
 
-    # collect rankings (rankings are currently in 4 tiers, sorted highest to lowest)
+    # collect rankings (rankings are currently in 4 tiers)
     tiers_count = 4
     rankings = [[] for _ in range(tiers_count)]
     for user_id in going:
@@ -370,7 +370,7 @@ async def make_teams(ctx, team_count):
         user_info = user_doc.get().to_dict()
         aura = user_info['aura']
         user_name = user_info['nickname']
-        rankings[tiers_count - aura].append(user_name)
+        rankings[aura - 1].append(user_name)
 
     # build teams based on rankings
     teams = [[] for _ in range(team_count)]

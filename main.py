@@ -361,7 +361,7 @@ async def make_teams(ctx, team_count):
     tiers_count = 4
     rankings = [[] for _ in range(tiers_count)]
     for user_id in going:
-        user_doc = users_ref.document(user_id)
+        user_doc = users_ref.document(str(user_id))
         if not user_doc.get().exists:
             await logs_channel.send(
                 f'```[ERROR][{time_now}] Unable to find user with id {user_id} in database, skipping user in team'

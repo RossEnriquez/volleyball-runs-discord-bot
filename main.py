@@ -374,12 +374,18 @@ async def make_teams(ctx, team_count):
 
     # build teams based on rankings
     teams = [[] for _ in range(team_count)]
-    pick_number = 0
+    pick_iterator = 0
+    pick_delta = 1
+
     for tier in reversed(rankings):
         random.shuffle(tier)
+        # snake draft
         for user in tier:
-            teams[pick_number % team_count].append(user)
-            pick_number += 1
+            teams[pick_iterator].append(user)
+            pick_iterator += pick_delta
+            if pick_iterator == -1 or pick_iterator == team_count:
+                pick_iterator -= pick_delta
+                pick_delta *= -1
 
     # display teams
     embed = discord.Embed(title="👥 Teams 👥", color=discord.Colour.green(), type='rich')
@@ -390,32 +396,41 @@ async def make_teams(ctx, team_count):
     await ctx.channel.send(embed=embed)
 
 
-# @bot.command(name='test')
-# async def test(ctx, team_count):
-#     team_count = int(team_count)
-#     if team_count < 1:
-#         return
-#
-#     rankings = [['aliana','chris','mj','paulG'], ['bryan','cassandra','elijah','girlie'],
-#                 ['alex','alexis','chen','danielL'], ['amar','jerome','julian','kyleP']]
-#
-#     # build teams based on rankings
-#     teams = [[] for _ in range(team_count)]
-#     pick_number = 0
-#     for tier in reversed(rankings):
-#         random.shuffle(tier)
-#         for user in tier:
-#             teams[pick_number % team_count].append(user)
-#             pick_number += 1
-#
-#     # display teams
-#     embed = discord.Embed(title="👥 Teams 👥", description='Check out your team here!', color=discord.Colour.green(),
-#                           type='rich')
-#     for idx, team in enumerate(teams):
-#         team_display = '\n'.join(team)
-#         embed.add_field(name=f'Team {idx + 1}', value=team_display, inline=True)
-#
-#     await ctx.channel.send(embed=embed)
+@bot.command(name='test')
+async def test(ctx, team_count):
+    return
+    team_count = int(team_count)
+    if team_count < 1:
+        return
+
+    rankings = [[], ['will','vincent','matthew'],
+                ['chen','alexis','tiffany','alex','danielT','jadon','david','ross','ethan','jill'], ['mohamed','kyleP']]
+
+    # build teams based on rankings
+    teams = [[] for _ in range(team_count)]
+    aura_counts = [0 for _ in range(team_count)]
+    pick_iterator = 0
+    pick_delta = 1
+
+    for tier in reversed(rankings):
+        random.shuffle(tier)
+        # snake draft
+        for user in tier:
+            teams[pick_iterator].append(user)
+            aura_counts[pick_iterator] += rankings.index(tier)
+            pick_iterator += pick_delta
+            if pick_iterator == -1 or pick_iterator == team_count:
+                pick_iterator -= pick_delta
+                pick_delta *= -1
+
+    # display teams
+    embed = discord.Embed(title="👥 Teams 👥", description='Check out your team here!', color=discord.Colour.green(),
+                          type='rich')
+    for idx, team in enumerate(teams):
+        team_display = '\n'.join(team)
+        embed.add_field(name=f'Team {idx + 1} ({aura_counts[idx]})', value=team_display, inline=True)
+
+    await ctx.channel.send(embed=embed)
 
 
 # To check the streaks leaderboard

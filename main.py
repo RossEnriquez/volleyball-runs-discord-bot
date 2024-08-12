@@ -336,7 +336,7 @@ async def make_teams(ctx, team_count):
         return
 
     going = set()
-    global last_booked_msg_id, last_plus_one_msg_id
+    global last_booked_msg_id
     if last_booked_msg_id is None:
         last_booked_msg_id = int(utils_ref.document('last_booked_msg').get().to_dict()['id'])
 
@@ -628,7 +628,9 @@ async def on_raw_reaction_add(payload):
     if last_start_msg_id is None:
         last_start_msg_id = int(utils_ref.document('last_start_msg').get().to_dict()['id'])
     if last_plus_one_msg_id is None:
-        last_plus_one_msg_id = int(utils_ref.document('last_plus_one_msg').get().to_dict()['id'])
+        id_from_doc = utils_ref.document('last_plus_one_msg').get().to_dict()['id']
+        if id_from_doc:
+            last_plus_one_msg_id = int(id_from_doc)
 
     time_now = datetime.now().strftime("%H:%M:%S")
     if message.id == last_booked_msg_id:
@@ -662,7 +664,7 @@ async def on_raw_reaction_add(payload):
                 f'@everyone ‼️\n```[INFO][{time_now}] Day {emoji} {matched_day} reached {vote_limit} votes!```')
             return
 
-    elif message.id == last_plus_one_msg_id:
+    elif last_plus_one_msg_id and message.id == last_plus_one_msg_id:
         if emoji == '☝️':
             await logs_channel.send(f'```[INFO][{time_now}] {user.nick} has a PLUS ONE ☝️ for the run```')
 
@@ -684,7 +686,9 @@ async def on_raw_reaction_remove(payload):
     if last_booked_msg_id is None:
         last_booked_msg_id = int(utils_ref.document('last_booked_msg').get().to_dict()['id'])
     if last_plus_one_msg_id is None:
-        last_plus_one_msg_id = int(utils_ref.document('last_plus_one_msg').get().to_dict()['id'])
+        id_from_doc = utils_ref.document('last_plus_one_msg').get().to_dict()['id']
+        if id_from_doc:
+            last_plus_one_msg_id = int(id_from_doc)
 
     time_now = datetime.now().strftime("%H:%M:%S")
     if message.id == last_booked_msg_id:
@@ -696,7 +700,7 @@ async def on_raw_reaction_remove(payload):
             await logs_channel.send(
                 f'```[INFO][{time_now}] {user.nick} REMOVED A DISLIKE 👎 from the last booked message```')
 
-    elif message.id == last_plus_one_msg_id:
+    elif last_plus_one_msg_id and message.id == last_plus_one_msg_id:
         if emoji == '☝️':
             await logs_channel.send(
                 f'```[INFO][{time_now}] {user.nick} REMOVED A PLUS ONE ☝️ from the last plus one message```')
@@ -881,8 +885,13 @@ async def remind_day_before():
         should_display_going = False
 
     if last_plus_one_msg_id is None:
-        last_plus_one_msg_id = int(utils_ref.document('last_plus_one_msg').get().to_dict()['id'])
+        id_from_doc = utils_ref.document('last_plus_one_msg').get().to_dict()['id']
+        if id_from_doc:
+            last_plus_one_msg_id = int(id_from_doc)
+
     try:
+        if last_plus_one_msg_id:
+            raise discord.NotFound()
         last_plus_one_msg = await announcement_channel.fetch_message(last_plus_one_msg_id)
     except (discord.NotFound, discord.HTTPException) as e:
         await logs_channel.send(

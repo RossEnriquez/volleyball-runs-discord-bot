@@ -890,7 +890,7 @@ async def remind_day_before():
             last_plus_one_msg_id = int(id_from_doc)
 
     try:
-        if last_plus_one_msg_id:
+        if not last_plus_one_msg_id:
             raise discord.NotFound()
         last_plus_one_msg = await announcement_channel.fetch_message(last_plus_one_msg_id)
     except (discord.NotFound, discord.HTTPException) as e:

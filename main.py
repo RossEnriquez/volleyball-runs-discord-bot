@@ -159,6 +159,14 @@ async def on_booked(ctx, loc, date, time, *notes):
     for emoji in booked_emojis:
         await sent_msg.add_reaction(emoji)
 
+    # update current run details stored on firebase
+    utils_ref.document('current_run').update({
+        'name': location['name'],
+        'address': location['address'],
+        'date': booked_date,
+        'time': time
+    })
+
     # create scheduled event
     event_time = time.split('-')
     start_time = datetime.strptime(event_time[0], '%I%p')
@@ -215,6 +223,7 @@ async def on_booked(ctx, loc, date, time, *notes):
 
 
 # To send out the pay message
+## TODO: fix this method lol
 # ex. $pay 11.97 "1 @user1 @user2..." "2 @user3 @user4..."
 @bot.command(name='pay')
 async def on_pay(ctx, price, *args):
@@ -356,14 +365,12 @@ async def make_teams(ctx, team_count):
         async for user in reaction.users():
             if not user.bot:
                 going.add(user.id)
-                print(f'going -> ${type(user.id)}')
 
     # collect rankings (rankings are currently in 4 tiers)
     tiers_count = 4
     rankings = [[] for _ in range(tiers_count)]
     user_docs = users_ref.stream()
     for user_doc in user_docs:
-        print(f'user_doc.id -> ${type(user_doc.id)}')
         if int(user_doc.id) in going:
             user_info = user_doc.to_dict()
             aura = user_info['aura']
@@ -920,8 +927,12 @@ async def remind_day_before():
                     if not user.bot:
                         reacted_plus_two.add(user.id)
 
-    event_info = re.search('@everyone\n((\n|.)*)React 👍', last_booked_msg.content).group(1)
-    msg = f'🏐 Just a reminder that we are playing tomorrow at:\n{event_info}'
+    event_info = utils_ref.document('current_run').to_dict()
+    date = datetime.utcfromtimestamp(event_info['date'].timestamp())
+    event_msg = f'- 🏐 {event_info["name"]}\n- 📍 {event_info["address"]}\n' \
+                f'- 🗓️️ {date.strftime("%A `%b %d`")} from `{event_info["time"]}`\n'
+
+    msg = f'🏐 Just a reminder that we are playing tomorrow at:\n{event_msg}'
     if reacted_going:
         msg += f'Going ({len(reacted_going)}):\n'
         for user_id in reacted_going:

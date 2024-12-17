@@ -360,17 +360,13 @@ async def make_teams(ctx, team_count):
     # collect rankings (rankings are currently in 4 tiers)
     tiers_count = 4
     rankings = [[] for _ in range(tiers_count)]
-    for user_id in going:
-        user_doc = users_ref.document(str(user_id))
-        if not user_doc.get().exists:
-            await logs_channel.send(
-                f'```[ERROR][{time_now}] Unable to find user with id {user_id} in database, skipping user in team'
-                f' creation.```')
-            return
-        user_info = user_doc.get().to_dict()
-        aura = user_info['aura']
-        user_name = user_info['nickname']
-        rankings[aura - 1].append(user_name)
+    user_docs = users_ref.stream()
+    for user_doc in user_docs:
+        if user_doc.id in going:
+            user_info = user_doc.to_dict()
+            aura = user_info['aura']
+            user_name = user_info['nickname']
+            rankings[aura - 1].append(user_name)
 
     # build teams based on rankings
     teams = [[] for _ in range(team_count)]

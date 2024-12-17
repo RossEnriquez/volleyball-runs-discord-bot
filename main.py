@@ -356,13 +356,15 @@ async def make_teams(ctx, team_count):
         async for user in reaction.users():
             if not user.bot:
                 going.add(user.id)
+                print(f'going -> ${type(user.id)}')
 
     # collect rankings (rankings are currently in 4 tiers)
     tiers_count = 4
     rankings = [[] for _ in range(tiers_count)]
     user_docs = users_ref.stream()
     for user_doc in user_docs:
-        if user_doc.id in going:
+        print(f'user_doc.id -> ${type(user_doc.id)}')
+        if int(user_doc.id) in going:
             user_info = user_doc.to_dict()
             aura = user_info['aura']
             user_name = user_info['nickname']

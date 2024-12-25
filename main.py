@@ -126,7 +126,13 @@ async def on_booked(ctx, loc, date, time, *notes):
 
     today = datetime.today()
     location = locations_ref.document(loc).get().to_dict()
-    booked_date = datetime.strptime(str(today.year) + date, '%Y%b%d')
+
+    # check if formatted like: 2024jan3
+    year = date[:4]
+    if not year.isdigit():
+        year = str(today.year)
+    booked_date = datetime.strptime(year + date, '%Y%b%d')
+
     notes_msg = ''
     for note in notes:
         notes_msg += f'- {note}\n'

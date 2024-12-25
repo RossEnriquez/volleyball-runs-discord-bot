@@ -130,8 +130,8 @@ async def on_booked(ctx, loc, date, time, *notes):
     # check if formatted like: 2024jan3
     year = date[:4]
     if not year.isdigit():
-        year = str(today.year)
-    booked_date = datetime.strptime(year + date, '%Y%b%d')
+        date = str(today.year) + date
+    booked_date = datetime.strptime(date, '%Y%b%d')
 
     notes_msg = ''
     for note in notes:

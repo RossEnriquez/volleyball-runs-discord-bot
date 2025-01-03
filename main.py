@@ -936,7 +936,7 @@ async def remind_day_before():
     event_info = utils_ref.document('current_run').get().to_dict()
     date = datetime.utcfromtimestamp(event_info['date'].timestamp())
     event_msg = f'- 🏐 {event_info["name"]}\n- 📍 {event_info["address"]}\n' \
-                f'- 🗓️️ {date.strftime("%A `%b %d`")} from `{event_info["time"]}`\n'
+                f'- 🗓️️ {date.strftime("%A `%b %d`")} from `{event_info["time"]}`\n\n'
 
     msg = f'🏐 Just a reminder that we are playing tomorrow at:\n{event_msg}'
     if reacted_going:

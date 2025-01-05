@@ -372,8 +372,8 @@ async def make_teams(ctx, team_count):
             if not user.bot:
                 going.add(user.id)
 
-    # collect rankings (rankings are currently in 4 tiers)
-    tiers_count = 4
+    # collect rankings (rankings are currently in 10 tiers)
+    tiers_count = 10
     rankings = [[] for _ in range(tiers_count)]
     user_docs = users_ref.stream()
     for user_doc in user_docs:

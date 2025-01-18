@@ -104,7 +104,7 @@ async def on_start(ctx, start, days):
         await sent_msg.add_reaction(emoji)
 
     # set reminder for people who haven't responded to start message
-    reminder_no_response_datetime = datetime.utcnow() + timedelta(hours=24)
+    reminder_no_response_datetime = datetime.now(timezone.utc) + timedelta(hours=24)
     no_response_doc = reminders_ref.document('no_response_start')
     no_response_doc.update({
         'scheduled_datetime': reminder_no_response_datetime,
@@ -193,7 +193,7 @@ async def on_booked(ctx, loc, date, time, *notes):
     )
 
     # set reminder for people who haven't responded to booked message
-    reminder_no_response_datetime = datetime.utcnow() + timedelta(hours=12)
+    reminder_no_response_datetime = datetime.now(timezone.utc) + timedelta(hours=12)
     no_response_booked_doc = reminders_ref.document('no_response_booked')
     no_response_booked_doc.update({
         'scheduled_datetime': reminder_no_response_datetime,
@@ -934,7 +934,7 @@ async def remind_day_before():
                         reacted_plus_two.add(user.id)
 
     event_info = utils_ref.document('current_run').get().to_dict()
-    date = datetime.utcfromtimestamp(event_info['date'].timestamp())
+    date = datetime.fromtimestamp(event_info['date'].timestamp(), timezone.utc)
     event_msg = f'- 🏐 {event_info["name"]}\n- 📍 {event_info["address"]}\n' \
                 f'- 🗓️️ {date.strftime("%A `%b %d`")} from `{event_info["time"]}`\n\n'
 
@@ -971,10 +971,10 @@ def run_reminder(reminder, do_reminder):
     if not reminder['should_reply']:
         return
 
-    scheduled_datetime = datetime.utcfromtimestamp(reminder['scheduled_datetime'].timestamp())
+    scheduled_datetime = datetime.fromtimestamp(reminder['scheduled_datetime'].timestamp(), timezone.utc)
 
     # only start reminder if it's within 24h of the scheduled datetime
-    if (scheduled_datetime - datetime.utcnow()).days == 0:
+    if (scheduled_datetime - datetime.now(timezone.utc)).days == 0:
         do_reminder.change_interval(time=scheduled_datetime.time())
         do_reminder.start()
         print(f'Reminder set for {scheduled_datetime}')

@@ -219,7 +219,8 @@ async def on_booked(ctx, loc, date, time, *notes):
     })
 
     # set reminder for the day before
-    reminder_day_before_datetime = start_datetime.astimezone(tz=timezone.utc)
+    day_before_datetime = start_datetime - timedelta(days=1)
+    reminder_day_before_datetime = day_before_datetime.astimezone(tz=timezone.utc)
     day_before_doc = reminders_ref.document('day_before')
     day_before_doc.update({
         'scheduled_datetime': reminder_day_before_datetime,

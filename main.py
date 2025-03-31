@@ -51,13 +51,13 @@ async def on_ready():
     logs_channel = await server.fetch_channel(config.LOGS_CHANNEL_ID)
 
     # check if reminders need to be sent out
-    reminder_no_response_start = reminders_ref.document('no_response_start').get().to_dict()
-    reminder_no_response_booked = reminders_ref.document('no_response_booked').get().to_dict()
+    # reminder_no_response_start = reminders_ref.document('no_response_start').get().to_dict()
+    # reminder_no_response_booked = reminders_ref.document('no_response_booked').get().to_dict()
     # reminder_plus_one = reminders_ref.document('plus_one').get().to_dict()
     reminder_day_before = reminders_ref.document('day_before').get().to_dict()
 
-    run_reminder(reminder_no_response_start, send_reminder_no_response_start)
-    run_reminder(reminder_no_response_booked, send_reminder_no_response_booked)
+    # run_reminder(reminder_no_response_start, send_reminder_no_response_start)
+    # run_reminder(reminder_no_response_booked, send_reminder_no_response_booked)
     # run_reminder(reminder_plus_one, send_reminder_plus_one)
     run_reminder(reminder_day_before, send_reminder_day_before)
 
@@ -104,14 +104,14 @@ async def on_start(ctx, start, days):
         await sent_msg.add_reaction(emoji)
 
     # set reminder for people who haven't responded to start message
-    reminder_no_response_datetime = datetime.now(timezone.utc) + timedelta(hours=24)
-    no_response_doc = reminders_ref.document('no_response_start')
-    no_response_doc.update({
-        'scheduled_datetime': reminder_no_response_datetime,
-        'should_reply': True
-    })
-    send_reminder_no_response_start.change_interval(time=reminder_no_response_datetime.time())
-    send_reminder_no_response_start.start()
+    # reminder_no_response_datetime = datetime.now(timezone.utc) + timedelta(hours=24)
+    # no_response_doc = reminders_ref.document('no_response_start')
+    # no_response_doc.update({
+    #     'scheduled_datetime': reminder_no_response_datetime,
+    #     'should_reply': True
+    # })
+    # send_reminder_no_response_start.change_interval(time=reminder_no_response_datetime.time())
+    # send_reminder_no_response_start.start()
 
 
 # To send out the booked message
@@ -193,14 +193,14 @@ async def on_booked(ctx, loc, date, time, *notes):
     )
 
     # set reminder for people who haven't responded to booked message
-    reminder_no_response_datetime = datetime.now(timezone.utc) + timedelta(hours=12)
-    no_response_booked_doc = reminders_ref.document('no_response_booked')
-    no_response_booked_doc.update({
-        'scheduled_datetime': reminder_no_response_datetime,
-        'should_reply': True
-    })
-    send_reminder_no_response_booked.change_interval(time=reminder_no_response_datetime.time())
-    send_reminder_no_response_booked.start()
+    # reminder_no_response_datetime = datetime.now(timezone.utc) + timedelta(hours=12)
+    # no_response_booked_doc = reminders_ref.document('no_response_booked')
+    # no_response_booked_doc.update({
+    #     'scheduled_datetime': reminder_no_response_datetime,
+    #     'should_reply': True
+    # })
+    # send_reminder_no_response_booked.change_interval(time=reminder_no_response_datetime.time())
+    # send_reminder_no_response_booked.start()
 
     # set reminder for plus ones
     # reminder_plus_one_datetime = datetime.utcnow() + timedelta(hours=48)

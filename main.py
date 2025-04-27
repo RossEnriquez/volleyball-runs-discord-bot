@@ -427,13 +427,13 @@ async def update(ctx, *args):
         if user_id not in users_to_update:
             # user did not go: streak = 0
             if user_info['streak'] != 0:
-                output.append(f'❌ {user_info["nickname"]} (Streak: {user_info["streak"]} -> 0)\n')
+                output += f'❌ {user_info["nickname"]} (Streak: {user_info["streak"]} -> 0)\n'
                 user_doc.update({'streak': 0})
             continue
 
         # user did go: streak += 1 and total += 1
-        output.append(f'✅ {user_info["nickname"]} (Streak: {user_info["streak"] + 1}, '
-                      f'Total: {user_info["total_times_came"] + 1})\n')
+        output += f'✅ {user_info["nickname"]} (Streak: {user_info["streak"] + 1}, ' \
+                  f'Total: {user_info["total_times_came"] + 1})\n'
         user_doc.update({'streak': user_info['streak'] + 1,
                          'total_times_came': user_info['total_times_came'] + 1})
 

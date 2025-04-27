@@ -408,6 +408,38 @@ async def make_teams(ctx, team_count):
     await ctx.channel.send(embed=embed)
 
 
+@bot.command(name='update')
+async def update(ctx, *args):
+    # parse users to update
+    users_to_update = set()
+    for user in args:
+        # format: <@(user_id)>
+        user_id = user[2:-1]
+        users_to_update.add(user_id)
+
+    output = '__**UPDATES:**__\n'
+    users = users_ref.stream()
+    for user in users:
+        user_id = str(user.id)
+        user_doc = users_ref.document(user_id)
+        user_info = user_doc.get().to_dict()
+
+        if user_id not in users_to_update:
+            # user did not go: streak = 0
+            if user_info['streak'] != 0:
+                output.append(f'❌ {user_info["nickname"]} (Streak: {user_info["streak"]} -> 0)\n')
+                user_doc.update({'streak': 0})
+            continue
+
+        # user did go: streak += 1 and total += 1
+        output.append(f'✅ {user_info["nickname"]} (Streak: {user_info["streak"] + 1}, '
+                      f'Total: {user_info["total_times_came"] + 1})\n')
+        user_doc.update({'streak': user_info['streak'] + 1,
+                         'total_times_came': user_info['total_times_came'] + 1})
+
+    ctx.channel.send(output)
+
+
 @bot.command(name='test')
 async def test(ctx, team_count):
     return

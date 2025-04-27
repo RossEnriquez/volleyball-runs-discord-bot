@@ -437,7 +437,7 @@ async def update(ctx, *args):
         user_doc.update({'streak': user_info['streak'] + 1,
                          'total_times_came': user_info['total_times_came'] + 1})
 
-    ctx.channel.send(output)
+    await ctx.channel.send(output)
 
 
 @bot.command(name='test')

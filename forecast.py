@@ -43,15 +43,3 @@ def get_weather_forecast(days: int):
 	print(day_after)
 
 	return day_after
-
-
-forecast = get_weather_forecast(1)
-precipitation_probability_max = forecast.iloc[1]
-temperature_2m_max = forecast.iloc[2]
-temperature_2m_min = forecast.iloc[3]
-weather_code = forecast.iloc[4]
-
-print(precipitation_probability_max)
-print(round(temperature_2m_max))
-print(round(temperature_2m_min))
-print(round(weather_code))

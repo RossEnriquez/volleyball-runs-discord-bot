@@ -410,6 +410,8 @@ async def make_teams(ctx, team_count):
     await ctx.channel.send(embed=embed)
 
 
+# To update the stats of the mentioned users - +1 to streak and total for those mentioned, and streak = 0 for those
+# not mentioned
 @bot.command(name='update')
 async def update(ctx, *args):
     # parse users to update
@@ -482,6 +484,7 @@ async def on_leaderboard(ctx):
     await sort_then_message(ctx, users_dict, embed_config, 10)
 
 
+# To check the flops leaderboard
 @bot.command(name='flops')
 async def on_flops(ctx):
     users_dict = {}

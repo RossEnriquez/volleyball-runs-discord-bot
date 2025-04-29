@@ -9,6 +9,8 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 import re
 import random
+from wmo_codes import get_wmo_interpretation
+from forecast import get_weather_forecast
 
 # discord config
 intents = discord.Intents.default()
@@ -966,10 +968,18 @@ async def remind_day_before():
                     if not user.bot:
                         reacted_plus_two.add(user.id)
 
+    forecast = get_weather_forecast(1)
+    precip_prob_max = round(forecast.iloc[1], 1)
+    temperature_max = round(forecast.iloc[2])
+    temperature_min = round(forecast.iloc[3])
+    weather_code = get_wmo_interpretation(round(forecast.iloc[4]))
+
     event_info = utils_ref.document('current_run').get().to_dict()
     date = datetime.fromtimestamp(event_info['date'].timestamp(), timezone.utc)
     event_msg = f'- 🏐 {event_info["name"]}\n- 📍 {event_info["address"]}\n' \
-                f'- 🗓️️ {date.strftime("%A `%b %d`")} from `{event_info["time"]}`\n\n'
+                f'- 🗓️️ {date.strftime("%A `%b %d`")} from `{event_info["time"]}`\n' \
+                f'- **{weather_code}** - H: **{temperature_max} °C**, L: **{temperature_min} °C** ' \
+                f'w/ **{precip_prob_max}%** chance of precipitation\n\n'
 
     msg = f'🏐 Just a reminder that we are playing tomorrow at:\n{event_msg}'
     if reacted_going:

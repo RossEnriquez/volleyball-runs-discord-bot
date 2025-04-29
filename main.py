@@ -442,43 +442,6 @@ async def update(ctx, *args):
     await ctx.channel.send(output)
 
 
-@bot.command(name='test')
-async def test(ctx, team_count):
-    return
-    team_count = int(team_count)
-    if team_count < 1:
-        return
-
-    rankings = [[], ['will','vincent','matthew'],
-                ['chen','alexis','tiffany','alex','danielT','jadon','david','ross','ethan','jill'], ['mohamed','kyleP']]
-
-    # build teams based on rankings
-    teams = [[] for _ in range(team_count)]
-    aura_counts = [0 for _ in range(team_count)]
-    pick_iterator = 0
-    pick_delta = 1
-
-    for tier in reversed(rankings):
-        random.shuffle(tier)
-        # snake draft
-        for user in tier:
-            teams[pick_iterator].append(user)
-            aura_counts[pick_iterator] += rankings.index(tier)
-            pick_iterator += pick_delta
-            if pick_iterator == -1 or pick_iterator == team_count:
-                pick_iterator -= pick_delta
-                pick_delta *= -1
-
-    # display teams
-    embed = discord.Embed(title="👥 Teams 👥", description='Check out your team here!', color=discord.Colour.green(),
-                          type='rich')
-    for idx, team in enumerate(teams):
-        team_display = '\n'.join(team)
-        embed.add_field(name=f'Team {idx + 1} ({aura_counts[idx]})', value=team_display, inline=True)
-
-    await ctx.channel.send(embed=embed)
-
-
 # To check the streaks leaderboard
 @bot.command(name='streaks')
 async def check_streaks(ctx):
@@ -798,7 +761,6 @@ async def remind_start():
             f'skipping start reminder.```')
         return
 
-
     # collect users who have reacted
     for reaction in last_start_msg.reactions:
         async for user in reaction.users():
@@ -912,7 +874,6 @@ async def remind_plus_one():
 
 async def remind_day_before():
     reacted_going = set()
-    # reacted_unsure = set()
     reacted_plus_one = set()
     reacted_plus_two = set()
     should_display_going = True
@@ -999,12 +960,6 @@ async def remind_day_before():
         for user_id in reacted_plus_two:
             msg += f'<@{user_id}> '
         msg += '\n\n'
-
-    # if reacted_unsure:
-    #     msg += 'Please like or dislike ASAP:\n'
-    #     for user_id in reacted_unsure:
-    #         msg += f'<@{user_id}> '
-    #     msg += '\n\n'
 
     await last_booked_msg.reply(msg)
 

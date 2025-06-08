@@ -650,12 +650,12 @@ async def on_raw_reaction_add(payload):
             await logs_channel.send(
                 f'```[INFO][{time_now}] {user.nick} LIKED 👍 the last booked message```')
 
-            going_cap = 21
+            going_cap = 18
             for reaction in message.reactions:
                 if reaction.emoji != emoji or reaction.count != going_cap + 1:
                     continue
                 await logs_channel.send(
-                    f'@everyone ‼️\n```[INFO][{time_now}] Day {emoji} Last booked message reached 21 person cap!```')
+                    f'@everyone ‼️\n```[INFO][{time_now}] Last booked message reached {going_cap} person cap!```')
 
         elif emoji == '👎':
             await logs_channel.send(

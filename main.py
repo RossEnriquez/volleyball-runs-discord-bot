@@ -911,6 +911,8 @@ async def remind_day_before():
         should_display_plus_ones_twos = False
 
     # collect users who liked the last booked message
+    # 2025-06-24 update: remove "going" list from day before reminder
+    """
     if should_display_going:
         for reaction in last_booked_msg.reactions:
             if reaction.emoji != '👍':
@@ -931,6 +933,7 @@ async def remind_day_before():
                 async for user in reaction.users():
                     if not user.bot:
                         reacted_plus_two.add(user.id)
+    """
 
     forecast = get_weather_forecast(1)
     precip_prob_max = round(forecast.iloc[1], 1)
@@ -946,6 +949,7 @@ async def remind_day_before():
                 f'w/ **{precip_prob_max}%** chance of precipitation\n\n'
 
     msg = f'🏐 Just a reminder that we are playing tomorrow at:\n{event_msg}'
+    """
     if reacted_going:
         msg += f'Going ({len(reacted_going)}):\n'
         for user_id in reacted_going:
@@ -963,6 +967,7 @@ async def remind_day_before():
         for user_id in reacted_plus_two:
             msg += f'<@{user_id}> '
         msg += '\n\n'
+    """
 
     await last_booked_msg.reply(msg)
 

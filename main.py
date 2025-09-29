@@ -178,7 +178,7 @@ async def on_booked(ctx, loc, date, time, *notes):
 
     reply_msg = f'BOOKED A RUN @everyone\n- 🏐 {location["name"]}\n- 📍 {location["address"]}\n' \
                 f'- 🗓️️ {booked_date.strftime("%A `%b %d`")} from `{time}`\n{notes_msg}\n' + \
-                f'- ‼️ NEW ‼️ [Add this event]({gcal_link}) to your GCal' + \
+                f'- ‼️ NEW ‼️ [Add this event to your GCal!]({gcal_link})\n' + \
                 f'React 👍/👎 based on whether or not you are coming'
 
     global last_start_msg_id, last_booked_msg_id

@@ -184,8 +184,8 @@ async def on_booked(ctx, loc, date, time, *notes):
     end_datetime = booked_date.replace(hour=end_time.hour, tzinfo=ZoneInfo('America/Toronto'))
 
     await server.create_scheduled_event(
-        name='🏐 Volleyball Runs 🏐',
-        description='Come to our volleyball runs 😆',
+        name='🏐 Volleyball Run 🏐',
+        description='Come to our volleyball run 😆',
         start_time=start_datetime,
         end_time=end_datetime,
         privacy_level=discord.PrivacyLevel.guild_only,

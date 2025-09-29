@@ -1,3 +1,4 @@
+import urllib
 import discord
 from discord.ext import commands, tasks
 import config
@@ -139,9 +140,46 @@ async def on_booked(ctx, loc, date, time, *notes):
     for note in notes:
         notes_msg += f'- {note}\n'
 
+    # create scheduled event
+    event_time = time.split('-')
+    start_time = datetime.strptime(event_time[0], '%I%p')
+    end_time = datetime.strptime(event_time[1], '%I%p')
+
+    start_datetime = booked_date.replace(hour=start_time.hour, tzinfo=ZoneInfo('America/Toronto'))
+    end_datetime = booked_date.replace(hour=end_time.hour, tzinfo=ZoneInfo('America/Toronto'))
+
+    event_name = '🏐 Volleyball Run 🏐'
+    event_details = 'Come to our volleyball run 😆'
+    event_location = (location['name'] + ', ' + location['address'])
+
+    await server.create_scheduled_event(
+        name=event_name,
+        description=event_details,
+        start_time=start_datetime,
+        end_time=end_datetime,
+        privacy_level=discord.PrivacyLevel.guild_only,
+        entity_type=discord.EntityType.external,
+        location=(location['name'] + ', ' + location['address']),
+        reason='Booked a new volleyball run'
+    )
+
+    # create gcal link
+    # TODO: make public event?
+    start_utc_str = start_datetime.astimezone(ZoneInfo('UTC')).strftime('%Y%m%dT%H%M%SZ')
+    end_utc_str = end_datetime.astimezone(ZoneInfo('UTC')).strftime('%Y%m%dT%H%M%SZ')
+    base_url = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+    params = {
+        'text': event_name,
+        'dates': f'{start_utc_str}/{end_utc_str}',
+        'location': event_location,
+        'ctz': 'America/Toronto'
+    }
+    gcal_link = base_url + '&' + urllib.parse.urlencode(params)
+
     reply_msg = f'BOOKED A RUN @everyone\n- 🏐 {location["name"]}\n- 📍 {location["address"]}\n' \
                 f'- 🗓️️ {booked_date.strftime("%A `%b %d`")} from `{time}`\n{notes_msg}\n' + \
-                'React 👍/👎 based on whether or not you are coming'
+                f'- ‼️ NEW ‼️ [Add this event]({gcal_link}) to your GCal' + \
+                f'React 👍/👎 based on whether or not you are coming'
 
     global last_start_msg_id, last_booked_msg_id
     # get last start message id
@@ -174,25 +212,6 @@ async def on_booked(ctx, loc, date, time, *notes):
         'date': booked_date,
         'time': time
     })
-
-    # create scheduled event
-    event_time = time.split('-')
-    start_time = datetime.strptime(event_time[0], '%I%p')
-    end_time = datetime.strptime(event_time[1], '%I%p')
-
-    start_datetime = booked_date.replace(hour=start_time.hour, tzinfo=ZoneInfo('America/Toronto'))
-    end_datetime = booked_date.replace(hour=end_time.hour, tzinfo=ZoneInfo('America/Toronto'))
-
-    await server.create_scheduled_event(
-        name='🏐 Volleyball Run 🏐',
-        description='Come to our volleyball run 😆',
-        start_time=start_datetime,
-        end_time=end_datetime,
-        privacy_level=discord.PrivacyLevel.guild_only,
-        entity_type=discord.EntityType.external,
-        location=(location['name'] + ', ' + location['address']),
-        reason='Booked a new volleyball run'
-    )
 
     # set reminder for people who haven't responded to booked message
     # reminder_no_response_datetime = datetime.now(timezone.utc) + timedelta(hours=12)

@@ -177,7 +177,7 @@ async def on_booked(ctx, loc, date, time, *notes):
     gcal_link = base_url + '&' + urllib.parse.urlencode(params)
 
     reply_msg = f'BOOKED A RUN @everyone\n- 🏐 {location["name"]}\n- 📍 {location["address"]}\n' \
-                f'- 🗓️️ {booked_date.strftime("%A `%b %d`")} from `{time}\n`' \
+                f'- 🗓️️ {booked_date.strftime("%A `%b %d`")} from `{time}\n' \
                 f'- ‼️ NEW ‼️ [Add this event to your GCal!]({gcal_link})\n' \
                 f'{notes_msg}\n' \
                 f'React 👍/👎 based on whether or not you are coming'

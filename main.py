@@ -70,12 +70,12 @@ async def on_ready():
 # To send out the start message
 # NOTE: when inputting days, there must be no spaces between commas/numbers
 @bot.command(name='start')
-async def on_start(ctx, start, days):
+async def on_start(ctx, date, days):
     if ctx.author.id not in bot_admins:
         return
 
-    today = datetime.today()
-    start_date = datetime.strptime(str(today.year) + start, '%Y%b%d')
+    date = get_formatted_date(date)
+    start_date = datetime.strptime(date, '%Y%b%d')
     selected_days = days.split(',')
     # insert start date into selected days
     selected_days.insert(0, '0')
@@ -127,13 +127,9 @@ async def on_booked(ctx, loc, date, time, *notes):
     reminders_ref.document('no_response_start').update({'should_reply': False})
     send_reminder_no_response_start.cancel()
 
-    today = datetime.today()
     location = locations_ref.document(loc).get().to_dict()
 
-    # check if formatted like: 2024jan3
-    year = date[:4]
-    if not year.isdigit():
-        date = str(today.year) + date
+    date = get_formatted_date(date)
     booked_date = datetime.strptime(date, '%Y%b%d')
 
     notes_msg = ''
@@ -1002,6 +998,18 @@ def run_reminder(reminder, do_reminder):
         do_reminder.change_interval(time=scheduled_datetime.time())
         do_reminder.start()
         print(f'Reminder set for {scheduled_datetime}')
+
+
+# Returns the inputted date in the format of YYYYmmd
+def get_formatted_date(date):
+    today = datetime.today()
+
+    # check if formatted like: 2024jan3
+    year = date[:4]
+    if not year.isdigit():
+        date = str(today.year) + date
+
+    return date
 
 
 bot.run(token)

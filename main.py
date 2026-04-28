@@ -92,7 +92,7 @@ async def on_start(ctx, date, days):
 
     msg_out = f'VOTING TIME @everyone\n' \
               f'React the day you are available for next week STARTING {start_date.strftime("%A `%b %d`")}\n' \
-              'WEEKDAYS(6pm-10ish)\nWEEKEND(11am-2pm)\n\n' \
+              'WEEKDAYS(6pm-10ish)\nWEEKEND(2pm-5ish)\n\n' \
               '‼REACT WITH A ❌ ON THIS MESSAGE if you can’t attend any day‼️\n' \
               f'{day_msgs}\n⚠️Please do one or the other so I know you are active'
     sent_msg = await announcement_channel.send(msg_out)
